@@ -1,0 +1,41 @@
+<container xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+
+        <service id="boxalino.subscriber.template_registration" class="Boxalino\Subscriber\TemplateRegistrationSubscriber">
+            <argument type="service" id="template"/>
+            <argument>%boxalino.plugin_dir%</argument>
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+
+        <service id="boxalino.subscriber.frontend-searchautocompletion" class="Boxalino\Subscriber\SearchAutocompletionResultSubscriber">
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+        <service id="boxalino.subscriber.frontend-tracking" class="Boxalino\Subscriber\TrackingSubscriber">
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+        <service id="boxalino.subscriber.frontend-indexing" class="Boxalino\Subscriber\IndexingSubscriber">
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+        <service id="boxalino.subscriber.frontend-recommendation" class="Boxalino\Subscriber\RecommendationSubscriber">
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+        <service id="boxalino.subscriber.frontend-relevance" class="Boxalino\Subscriber\RelevanceSubscriber">
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+        <service id="boxalino.subscriber.frontend-cronjobs" class="Boxalino\Subscriber\CronSubscriber">
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+        <service id="boxalino.subscriber.frontend-backend" class="Boxalino\Subscriber\BackendSubscriber">
+            <argument>%boxalino.plugin_dir%</argument>
+            <tag name="shopware.event_subscriber"/>
+        </service>
+
+    </services>
+</container>

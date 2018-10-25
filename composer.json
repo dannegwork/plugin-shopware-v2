@@ -1,0 +1,20 @@
+{
+  "name": "dannegwork/plugin-shopware-v2",
+  "type": "shopware-plugin",
+  "description": "Integrates Boxalino search & recommendation into Shopware",
+  "license": "proprietary",
+  "homepage": "http://www.boxalino.com/",
+  "extra": {
+    "installer-name": "Boxalino",
+    "installer-paths": {
+      "custom/plugins/Boxalino": ["dannegwork/plugin-shopware-v2", "vendor/package"]
+    }
+  },
+  "require": {
+    "composer/installers": "~1.0",
+    "ext-curl": "*",
+    "ext-dom": "*",
+    "ext-mcrypt": "*",
+    "php": "^7.0"
+  }
+}

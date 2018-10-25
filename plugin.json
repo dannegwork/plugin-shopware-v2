@@ -1,0 +1,29 @@
+{
+  "label": {
+    "de": "Boxalino",
+    "en": "Boxalino"
+  },
+  "copyright": "Copyright © 2018, Boxalino AG",
+  "description": "Integrates Boxalino search & recommendation into Shopware.",
+  "license": "MIT",
+  "link": "http://www.boxalino.com/",
+  "support": "support@boxalino.com",
+  "author": "Boxalino AG",
+  "currentVersion": "1.6.16",
+
+  "changelog": {
+    "de": {
+      "1.6.16.3": "PET-97 - Aktualisieren Sie die Plugin-Installationsmethode;"
+    },
+    "en": {
+      "1.6.16": "PET-97 - Update the plugin installation method;"
+    }
+  },
+
+  "compatibility": {
+    "minimumVersion": "5.2.0",
+    "maximumVersion": null,
+    "blacklist": [
+    ]
+  }
+}

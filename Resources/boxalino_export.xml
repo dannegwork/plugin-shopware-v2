@@ -1,0 +1,13 @@
+<boxalino_export>
+    <translation_fields>
+        <field>name</field>
+        <field>keywords</field>
+        <field>description</field>
+        <field>description_long</field>
+        <field>attr1</field>
+        <field>attr2</field>
+        <field>attr3</field>
+        <field>attr4</field>
+        <field>attr5</field>
+    </translation_fields>
+</boxalino_export>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/5.4/engine/Shopware/Components/Plugin/schema/plugin.xsd">
+
+    <version>1.6.16</version>
+    <author>Boxalino AG</author>
+    <license>proprietary</license>
+    <label lang="en">Boxalino</label>
+    <label lang="de">Boxalino</label>
+    <compatibility minVersion="5.2.0"/>
+
+</plugin>

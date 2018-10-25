@@ -1,0 +1,878 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/5.4/engine/Shopware/Components/Plugin/schema/config.xsd">
+    <elements>
+        <element required="true" type="select" scope="locale">
+            <name>active</name>
+            <label lang="en">General - Plugin</label>
+            <value>1</value>
+            <description lang="en">Is the overall ShpwBxl plugin active (global switch)?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>account</name>
+            <label lang="en">General - Account</label>
+            <description lang="en">Please request your account with credentials by contacting support@ShpwBxl.com.</description>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>password</name>
+            <label lang="en">General - Password</label>
+            <description lang="en">Please request your account with credentials by contacting support@ShpwBxl.com.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>dev</name>
+            <label lang="en">General - Dev</label>
+            <value>1</value>
+            <description lang="en">Is the account a development account or a production account? (Yes=DEV, No=PROD).</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>No</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Yes</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>domain</name>
+            <label lang="en">General - Domain</label>
+            <description lang="en">What is your domain (e.g.: www.myshop.com)? Used to store cookie information about session ID and visitor ID.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>tracking_enabled</name>
+            <label lang="en">General - Tracker</label>
+            <value>1</value>
+            <description lang="en">Is the JavaScript tracker enabled?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disabled</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enabled</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>host</name>
+            <label lang="en">General - Host</label>
+            <value>cdn.bx-cloud.com</value>
+            <description lang="en">Optional: uses default value "cdn.bx-cloud.com" if left empty.</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>p13_user_name</name>
+            <label lang="en">General - P13 User Name</label>
+            <description lang="en">Optional: uses default credentials if left empty.</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>p13_password</name>
+            <label lang="en">General - P13 Password</label>
+            <description lang="en">Optional: uses default credentials if left empty.</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>overwrite_language</name>
+            <label lang="en">General - Overwrite Language</label>
+            <description lang="en">Optional: uses store's language by default.</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>username</name>
+            <label lang="en">General - ShpwBxl User Name</label>
+            <description lang="en">Optional: leave empty to use account name as username (default case).</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>entity_id</name>
+            <label lang="en">General - ID Field Name</label>
+            <description lang="en">Optional: specify special field name for search and recommendation grouping.</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>returned_fields</name>
+            <label lang="en">General - Returned Fields</label>
+            <description lang="en">Optional: Write here comma-separated names of fields in ShpwBxl response. Colon separate option: global (without language version), local (with language version)</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>overwrite_shop</name>
+            <label lang="en">General - Overwrite Shop ID</label>
+            <description lang="en">If you want to use a different shop for this shop, please provide the shop ID you want to use instead. This will overwrite the shop ID in the request.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>search_enabled</name>
+            <label lang="en">Search - Search</label>
+            <value>1</value>
+            <description lang="en">Is the ShpwBxl search enabled?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>blog_search_enabled</name>
+            <label lang="en">Search - Blog Search</label>
+            <value>1</value>
+            <description lang="en">Is ShpwBxl search with blogs active?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>redirect_search_enabled</name>
+            <label lang="en">Search - Redirect Search</label>
+            <value>1</value>
+            <description lang="en">Should our plugin redirect to a product, if the search result only has one result?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>search_subphrase_result_limit</name>
+            <label lang="en">Search - Search - Sub-Phrases Result Limit.</label>
+            <value>4</value>
+            <description lang="en">Number of sub-phrase results you want to display. If set to 0, the Sub-phrases are not displayed anymore.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>search_subphrase_product_limit</name>
+            <label lang="en">Search - Search - Sub-Phrases Product Limit.</label>
+            <value>5</value>
+            <description lang="en">Number of products you want to show for a sub-phrase result. The maximum number of products you can display depends on the offset which is defined on the search page. If you set it to 0, then only the title for the sub-phrase will be displayed."</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>search_widget_name</name>
+            <label lang="en">Search - Search - Choice ID</label>
+            <value>search</value>
+            <description lang="en">Optional: default value is "search" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>navigation_enabled</name>
+            <label lang="en">Search - Navigation</label>
+            <value>1</value>
+            <description lang="en">Is ShpwBxl navigation active?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>navigation_special_enabled</name>
+            <label lang="en">Search - Navigation - Special Cases</label>
+            <value>0</value>
+            <description lang="en">Are the special cases active? Will set the sorting back to default.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>navigation_exclude_ids</name>
+            <label lang="en">Search - Navigation - Special Cases - Category IDs</label>
+            <description lang="en">Optional: list of category ids separated by ',' to enable special cases.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>navigation_sorting</name>
+            <label lang="en">Search - Navigation - Sort</label>
+            <value>0</value>
+            <description lang="en">Use ShpwBxl sorting on Navigation (Relevance)? Enables "relevance" as a default option for listing.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>navigation_product_stream</name>
+            <label lang="en">Search - Navigation - Product Stream</label>
+            <value>0</value>
+            <description lang="en">Use ShpwBxl to display a product stream (only for non-conditional product streams).</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>navigation_widget_name</name>
+            <label lang="en">Search - Navigation - Choice ID</label>
+            <value>navigation</value>
+            <description lang="en">Optional: default value is "navigation" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>navigation_activate_cache</name>
+            <label lang="en">Search - Navigation - Activate Cache</label>
+            <value>0</value>
+            <description lang="en">If active, the shop cache will not be disabled.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>autocomplete_enabled</name>
+            <label lang="en">Search - Autocomplete</label>
+            <value>0</value>
+            <description lang="en">Is ShpwBxl search-as-you-type (autocomplete) active?</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>autocomplete_widget_name</name>
+            <label lang="en">Search - Autocomplete - Choice ID</label>
+            <value>autocomplete</value>
+            <description lang="en">Optional: default value is "autocomplete" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>textual_suggestion_limit</name>
+            <label lang="en">Search - Autocomplete -  Textual Suggestions</label>
+            <value>3</value>
+            <description lang="en">Maximum number of search textual suggestions to display under the search bar while the user is typing.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>product_suggestion_limit</name>
+            <label lang="en">Search - Autocomplete -  Product Suggestions</label>
+            <value>3</value>
+            <description lang="en">Maximum number of product suggestions to display under the search bar while the user is typing.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>blog_suggestion_limit</name>
+            <label lang="en">Search - Autocomplete -  Blog Suggestions</label>
+            <value>3</value>
+            <description lang="en">Maximum number of blog suggestions to display under the search bar while the user is typing.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>blog_page_recommendation</name>
+            <label lang="en">Blog Page - Product Recommendation</label>
+            <value>0</value>
+            <description lang="en">If enabled, the product recommendation on the blog page will be returned from our plugin.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>blog_page_recommendation_min</name>
+            <label lang="en">Blog Page - Product Recommendation - Min Items</label>
+            <value>5</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>blog_page_recommendation_max</name>
+            <label lang="en">Blog Page - Product Recommendation - Max Items</label>
+            <value>5</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>blog_page_recommendation_name</name>
+            <label lang="en">Blog Page - Product Recommendation - Choice ID</label>
+            <value>read_product</value>
+            <description lang="en">Optional: default value is "read_product" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>detail_recommendation_ajax</name>
+            <label lang="en">PDP - Detail Page - Load Ajax</label>
+            <value>0</value>
+            <description lang="en">Load recommendations on the product detail page via Ajax. Improves loading speed for product detail page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>detail_blog_recommendation</name>
+            <label lang="en">PDP - Blog Recommendation</label>
+            <value>0</value>
+            <description lang="en">Display blog recommendation on the product detail page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>detail_blog_recommendation_min</name>
+            <label lang="en">PDP - Blog Recommendation - Min Items</label>
+            <value>5</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>detail_blog_recommendation_max</name>
+            <label lang="en">PDP - Blog Recommendation - Max Items</label>
+            <value>5</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>detail_blog_recommendation_name</name>
+            <label lang="en">PDP - Blog Recommendation - Choice ID</label>
+            <value>read</value>
+            <description lang="en">Optional: default value is "read" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>cart_recommendation_enabled</name>
+            <label lang="en">PDP - Cart</label>
+            <value>1</value>
+            <description lang="en">Enable widget for recommendation on basket page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>cart_recommendation_checkout</name>
+            <label lang="en">PDP - Cart - Checkout</label>
+            <value>0</value>
+            <description lang="en">Show cart recommendation on the checkout/cart page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>cart_recommendation_min</name>
+            <label lang="en">PDP - Cart - Min Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>cart_recommendation_max</name>
+            <label lang="en">PDP - Cart - Max Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>cart_recommendation_name</name>
+            <label lang="en">PDP - Cart - Choice ID</label>
+            <value>basket</value>
+            <description lang="en">Optional: default value is "basket" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>accessories_recommendation_enabled</name>
+            <label lang="en">PDP - Accessories</label>
+            <value>1</value>
+            <description lang="en">Enable widget for accessories recommendation on product page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>accessories_recommendation_min</name>
+            <label lang="en">PDP - Accessories - Min Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>accessories_recommendation_max</name>
+            <label lang="en">PDP - Accessories - Max Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>accessories_recommendation_name</name>
+            <label lang="en">PDP - Accessories - Choice ID</label>
+            <value>accessories</value>
+            <description lang="en">Optional: default value is "accessories" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>similar_recommendation_enabled</name>
+            <label lang="en">PDP - Similar</label>
+            <value>1</value>
+            <description lang="en">Enable widget for similar recommendation on product page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>similar_recommendation_min</name>
+            <label lang="en">PDP - Similar - Min Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>similar_recommendation_max</name>
+            <label lang="en">PDP - Similar - Max Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>similar_recommendation_name</name>
+            <label lang="en">PDP - Similar - Choice ID</label>
+            <value>similar</value>
+            <description lang="en">Optional: default value is "similar" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>complementary_recommendation_enabled</name>
+            <label lang="en">PDP - Complementary</label>
+            <value>1</value>
+            <description lang="en">Enable widget for "customers also bought" recommendation on product page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>complementary_recommendation_hook</name>
+            <label lang="en">PDP - Complementary Hook</label>
+            <value>0</value>
+            <description lang="en">Enable hook for "customers also bought" recommendation. Will hook the function sGetAlsoBoughtArticles in sMarketing.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>complementary_recommendation_min</name>
+            <label lang="en">PDP - Complementary - Min Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>complementary_recommendation_max</name>
+            <label lang="en">PDP - Complementary - Max Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>complementary_recommendation_name</name>
+            <label lang="en">PDP - Complementary - Choice ID</label>
+            <value>complementary</value>
+            <description lang="en">Optional: default value is "complementary" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>related_recommendation_enabled</name>
+            <label lang="en">PDP - Related</label>
+            <value>1</value>
+            <description lang="en">Enable widget for "customers also viewed" recommendation on product page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>related_recommendation_hook</name>
+            <label lang="en">PDP - Related Hook</label>
+            <value>0</value>
+            <description lang="en">Enable hook for "customers also viewed" recommendation. Will hook the function sGetSimilaryShownArticles in sMarketing.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>related_recommendation_min</name>
+            <label lang="en">PDP - Related - Min Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>related_recommendation_max</name>
+            <label lang="en">PDP - Related - Max Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>related_recommendation_name</name>
+            <label lang="en">PDP - Related - Choice ID</label>
+            <value>related</value>
+            <description lang="en">Optional: default value is "related" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>noresults_recommendation_enabled</name>
+            <label lang="en">PDP - No Results</label>
+            <value>1</value>
+            <description lang="en">Enable recommendations for no results on the search page.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>noresults_recommendation_min</name>
+            <label lang="en">PDP - No Results - Min Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>noresults_recommendation_max</name>
+            <label lang="en">PDP - No Results - Max Items</label>
+            <value>3</value>
+            <description lang="en">E.g.: if you want 4 recommendations (no more no less), then write 4 both on minimum and maximum recommended items.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+        <element required="true" type="text" scope="locale">
+            <name>noresults_recommendation_name</name>
+            <label lang="en">PDP - No Results - Choice ID</label>
+            <value>noresults</value>
+            <description lang="en">Optional: default value is "noresults" and should normally not be changed.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>export</name>
+            <label lang="en">Exporter - Export</label>
+            <value>1</value>
+            <description lang="en">Enable exporter.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element>
+            <name>export_server</name>
+            <label lang="en">Exporter - Export - Server</label>
+            <value>http://di1.bx-cloud.com</value>
+            <description lang="en">Optional: http://di1.bx-cloud.com by default if left empty.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>export_publish_config</name>
+            <label lang="en">Exporter - Export - Publish Configuration</label>
+            <value>1</value>
+            <description lang="en">Yes by default. Any changes in product/customers/transaction properties will be automatically validated. For safety, it is recommended to de-activate this option once in production to make sure no unwanted changes are automatically published. However, if not activated, changes in the configuration will not be considered until published otherwise and, in the case of property deletions, the data sync might fail until the changes are published. Publishing of the configuration can be done by re-activating this option and running a full data sync again, or by publishing the configuration directly in ShpwBxl Data Intelligence web-admin.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>export_product_include</name>
+            <label lang="en">Exporter - Products - Include Properties</label>
+            <description lang="en">Optional: list of product properties separated by ','; if left empty, then all properties will be exported except the ones defined as excluded properties (next parameter).</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>export_product_exclude</name>
+            <label lang="en">Exporter - Products - Exclude Properties</label>
+            <description lang="en">Optional: list of product properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of product properties to include is not empty.</description>
+        </element>
+        <element required="false" type="select" scope="locale">
+            <name>export_product_images</name>
+            <label lang="en">Exporter - Products - Image URL</label>
+            <value>1</value>
+            <description lang="en">Optional: Export image and thumbnail image URLs (not required if standard usage of search and recommendations, as the shop renders the images itself). If activated, makes export slower.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="false" type="select" scope="locale">
+            <name>export_product_url</name>
+            <label lang="en">Exporter - Products - Product URL</label>
+            <value>1</value>
+            <description lang="en">Optional: Export product urls (not required if standard usage of search and recommendations, as the shop renders the url itself). If activated, makes export slower.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>export_customer_enable</name>
+            <label lang="en">Exporter - Customers</label>
+            <value>1</value>
+            <description lang="en">Enable customer export.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>export_customer_include</name>
+            <label lang="en">Exporter - Customers - Include Properties</label>
+            <description lang="en">Optional: list of customer properties separated by ','; if left empty, then all properties will be exported except the ones defined as excluded properties (next parameter).</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>export_customer_include</name>
+            <label lang="en">Exporter - Customers - Exclude Properties</label>
+            <description lang="en">Optional: list of customer properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of customer properties to include is not empty.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>export_transaction_enable</name>
+            <label lang="en">Exporter - Transactions</label>
+            <value>1</value>
+            <description lang="en">Enable transaction export.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>export_transaction_mode</name>
+            <label lang="en">Exporter - Transactions - Mode</label>
+            <value>1</value>
+            <description lang="en">Choose how the transaction should be exported. For Incremental, the exporter will only export the last month.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Full</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Incremental</label>
+                </option>
+            </store>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>export_transaction_include</name>
+            <label lang="en">Exporter - Transactions - Include Properties</label>
+            <description lang="en">Optional: list of transactions properties separated by ','; if left empty, then all properties will be exported except the ones defined as excluded properties (next parameter).</description>
+        </element>
+        <element required="false" type="text" scope="locale">
+            <name>export_transaction_exclude</name>
+            <label lang="en">Exporter - Transactions - Exclude Properties</label>
+            <description lang="en">Optional: list of transactions properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of transactions/orders properties to include is not empty.</description>
+        </element>
+        <element required="true" type="select" scope="locale">
+            <name>export_voucher_enable</name>
+            <label lang="en">Exporter - Voucher</label>
+            <value>1</value>
+            <description lang="en">Enable voucher export.</description>
+            <store>
+                <option>
+                    <value>0</value>
+                    <label>Disable</label>
+                </option>
+                <option>
+                    <value>1</value>
+                    <label>Enable</label>
+                </option>
+            </store>
+        </element>
+        <element required="true" type="number" scope="locale">
+            <name>export_cron_schedule</name>
+            <label lang="en">Exporter - Schedule</label>
+            <value>120</value>
+            <description lang="en">Set the time in minutes for the delta export cron job to wait since the last full export cron job. This option needs to be set, if you use the delta export cron job regularly, otherwise the delta export will run while the full export is still processing. Usually 4 hours (240 minutes) should be good, but this depends on the size of your shop.</description>
+            <options>
+                <minValue>0</minValue>
+            </options>
+        </element>
+    </elements>
+</config>
