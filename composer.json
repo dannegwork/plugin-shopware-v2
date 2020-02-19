@@ -1,20 +1,27 @@
 {
   "name": "dannegwork/plugin-shopware-v2",
-  "type": "shopware-plugin",
-  "description": "Integrates Boxalino search & recommendation into Shopware",
+  "type": "shopware-platform-plugin",
+  "description": "Boxalino Intelligence Framework",
   "license": "proprietary",
   "homepage": "http://www.boxalino.com/",
   "extra": {
     "installer-name": "Boxalino",
     "installer-paths": {
-      "custom/plugins/Boxalino": ["dannegwork/plugin-shopware-v2", "vendor/package"]
+      "custom/plugins/BoxalinoIntelligence": ["dannegwork/plugin-shopware-v2", "vendor/package"]
+    },
+    "shopware-plugin-class": "Boxalino\\IntelligenceFramework\\IntelligenceFramework",
+    "copyright": "(c) by Boxalino AG",
+    "label": {
+      "de-DE": "Boxalino Framework für Shopware v6",
+      "en-GB": "Boxalino Framework for Shopware v6"
     }
   },
   "require": {
-    "composer/installers": "~1.0",
-    "ext-curl": "*",
-    "ext-dom": "*",
-    "ext-mcrypt": "*",
     "php": "^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Boxalino\\IntelligenceFramework\\": "src/"
+    }
   }
 }

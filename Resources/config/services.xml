@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="Boxalino\IntelligenceFramework\Core\Content\Boxalino\ExportDefinition">
+            <tag name="shopware.entity.definition" entity="boxalino_export" />
+        </service>
+        <service id="Boxalino\IntelligenceFramework\Core\Content\Boxalino\CronExportDefinition">
+            <tag name="shopware.entity.definition" entity="boxalino_cron_export" />
+        </service>
+    </services>
+</container>
