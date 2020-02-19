@@ -1,7 +1,6 @@
 <?php
 namespace Boxalino\Models\Exporter;
 
-
 class Order implements ExporterInterface
 {
 
