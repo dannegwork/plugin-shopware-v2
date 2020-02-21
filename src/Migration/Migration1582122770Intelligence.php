@@ -21,13 +21,13 @@ class Migration1582122770Intelligence extends MigrationStep
               `export_date` DATETIME,
               `status` VARCHAR(128) NOT NULL,
               `updated_at` DATETIME(3) NULL,
-              PRIMARY KEY (`account`, `type`),
+              PRIMARY KEY (`account`, `type`)
             );
         ');
 
         $connection->executeQuery('
             CREATE TABLE IF NOT EXISTS `boxalino_cron_export` (
-              `export_date` DATETIME,
+              `export_date` DATETIME
             );
         ');
     }

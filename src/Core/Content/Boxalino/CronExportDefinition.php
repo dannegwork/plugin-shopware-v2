@@ -3,11 +3,8 @@
 namespace Boxalino\IntelligenceFramework\Core\Content\Boxalino;
 
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\DateField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
 class CronExportDefinition extends EntityDefinition

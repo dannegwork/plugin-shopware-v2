@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
+    <card>
+        <title>General Configuration</title>
+        <title lang="de-DE">Minimale Konfiguration</title>
+        <input-field type="bool">
+            <name>active</name>
+            <defaultValue>0</defaultValue>
+            <label>Plugin Status</label>
+            <helpText>Is the overall Boxalino plugin active (global switch)?</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>account</name>
+            <label>Account</label>
+            <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
+        </input-field>
+        <input-field type="password">
+            <name>password</name>
+            <label>Password</label>
+            <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
+        </input-field>
+        <input-field type="single-select">
+            <name>index</name>
+            <defaultValue>0</defaultValue>
+            <label>Data Index</label>
+            <helpText>Is the account a development account or a production account?.</helpText>
+            <options>
+                <option>
+                    <id>0</id>
+                    <name>Production</name>
+                </option>
+                <option>
+                    <id>1</id>
+                    <name>Development</name>
+                </option>
+            </options>
+        </input-field>
+        <input-field type="text">
+            <name>apiKey</name>
+            <label>API key</label>
+            <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>apiSecret</name>
+            <label>API password</label>
+            <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>domain</name>
+            <label>Domain</label>
+            <helpText>What is your domain (e.g.: www.myshop.com)? Used to options cookie information about session ID and visitor ID.</helpText>
+        </input-field>
+    </card>
+    <card>
+        <title>Tracker</title>
+        <title lang="de-DE">Tracker</title>
+        <input-field type="bool">
+            <name>trackingStatus</name>
+            <defaultValue>0</defaultValue>
+            <label>Tracker Status</label>
+            <helpText>Is the JavaScript tracker enabled?</helpText>
+        </input-field>
+    </card>
+    <card>
+        <title>Advanced</title>
+        <input-field type="text">
+            <name>host</name>
+            <label>Host</label>
+            <defaultValue>main.bx-cloud.com</defaultValue>
+            <helpText>Optional: uses default value "main.bx-cloud.com" if left empty; Use "r-st.bx-cloud.com" to connect to our staging servers.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>overwriteLanguage</name>
+            <label>Overwrite Language</label>
+            <helpText>Optional: uses store's language by default.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>entityId</name>
+            <label>ID Field Name</label>
+            <helpText>Optional: specify special field name for search and recommendation grouping.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>returnedFields</name>
+            <label>Returned Fields</label>
+            <helpText>Optional: Write here comma-separated names of fields in Boxalino response. Colon separate option: global (without language version), local (with language version)</helpText>
+        </input-field>
+        <input-field type="int">
+            <name>overwriteShop</name>
+            <label>Overwrite Shop ID</label>
+            <helpText>If you want to use a different shop for this shop, please provide the shop ID you want to use instead. This will overwrite the shop ID in the request.</helpText>
+        </input-field>
+    </card>
+    <card>
+        <title>Exporter</title>
+        <input-field type="bool">
+            <name>export</name>
+            <defaultValue>0</defaultValue>
+            <label>Exporter Status</label>
+        </input-field>
+        <input-field type="bool">
+            <name>publishConfig</name>
+            <defaultValue>1</defaultValue>
+            <label>Publish Configuration</label>
+            <helpText>Yes by default. Any changes in product/customers/transaction properties will be automatically validated. For safety, it is recommended to de-activate this option once in production to make sure no unwanted changes are automatically published. However, if not activated, changes in the configuration will not be considered until published otherwise and, in the case of property deletions, the data sync might fail until the changes are published. Publishing of the configuration can be done by re-activating this option and running a full data sync again, or by publishing the configuration directly in Boxalino Data Intelligence web-admin.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>exportProductInclude</name>
+            <label>Products - Include Properties</label>
+            <helpText>Optional: list of product properties separated by ','; if left empty, then all properties will be exported except the ones defined as excluded properties (next parameter).</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>exportProductExclude</name>
+            <label> Products - Exclude Properties</label>
+            <helpText>Optional: list of product properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of product properties to include is not empty.</helpText>
+        </input-field>
+        <input-field type="bool">
+            <name>exportProductImages</name>
+            <defaultValue>1</defaultValue>
+            <label>Export Products Image URL</label>
+            <helpText>Optional: Export image and thumbnail image URLs (not required if standard usage of search and recommendations, as the shop renders the images itself). If activated, makes export slower.</helpText>
+        </input-field>
+        <input-field type="bool">
+            <name>exportProductUrl</name>
+            <defaultValue>1</defaultValue>
+            <label>Export Products URL</label>
+            <helpText>Optional: Export product urls (not required if standard usage of search and recommendations, as the shop renders the url itself). If activated, makes export slower.</helpText>
+        </input-field>
+        <input-field type="bool">
+            <name>exportCustomerEnable</name>
+            <defaultValue>1</defaultValue>
+            <label>Export Customers</label>
+        </input-field>
+        <input-field type="text">
+            <name>exportCustomerInclude</name>
+            <label>Customers - Include Properties</label>
+            <helpText>Optional: list of customer properties separated by ','; if left empty, then all properties will be exported except the ones defined as excluded properties (next parameter).</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>exportCustomerExclude</name>
+            <label>Customers - Exclude Properties</label>
+            <helpText>Optional: list of customer properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of customer properties to include is not empty.</helpText>
+        </input-field>
+        <input-field type="bool">
+            <name>exportTransactionEnable</name>
+            <defaultValue>1</defaultValue>
+            <label>Export Transactions</label>
+        </input-field>
+        <input-field type="single-select">
+            <name>exportTransactionMode</name>
+            <defaultValue>0</defaultValue>
+            <label>Transactions Mode</label>
+            <helpText>Choose how the transaction should be exported. For Incremental, the exporter will only export the last month.</helpText>
+            <options>
+                <option>
+                    <id>0</id>
+                    <name>Full</name>
+                </option>
+                <option>
+                    <id>1</id>
+                    <name>Incremental</name>
+                </option>
+            </options>
+        </input-field>
+        <input-field type="text">
+            <name>exportTransactionInclude</name>
+            <label>Transactions - Include Properties</label>
+            <helpText>Optional: list of transactions properties separated by ','; if left empty, then all properties will be exported except the ones defined as excluded properties (next parameter).</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>exportTransactionExclude</name>
+            <label>Transactions - Exclude Properties</label>
+            <helpText>Optional: list of transactions properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of transactions/orders properties to include is not empty.</helpText>
+        </input-field>
+        <input-field type="bool">
+            <name>exportVoucherEnable</name>
+            <defaultValue>1</defaultValue>
+            <label>Export Vouchers</label>
+        </input-field>
+        <input-field type="int">
+            <name>exportCronSchedule</name>
+            <defaultValue>60</defaultValue>
+            <label>Schedule Time</label>
+            <helpText>Set the time in minutes for the delta export cron job to wait since the last full export cron job. This option needs to be set, if you use the delta export cron job regularly, otherwise the delta export will run while the full export is still processing. Usually 4 hours (240 minutes) should be good, but this depends on the size of your shop.</helpText>
+        </input-field>
+    </card>
+</config>
