@@ -1,0 +1,29 @@
+{
+  "name": "dannegwork/plugin-shopware-v2",
+  "type": "shopware-platform-plugin",
+  "description": "Boxalino Intelligence Framework",
+  "license": "proprietary",
+  "version": "v0.0.1",
+  "homepage": "http://www.boxalino.com/",
+  "author" : "Boxalino AG <support@boxalino.com>",
+  "extra": {
+    "installer-name": "Boxalino",
+    "installer-paths": {
+      "custom/plugins/BoxalinoIntelligence": ["dannegwork/plugin-shopware-v2", "vendor/package"]
+    },
+    "shopware-plugin-class": "Boxalino\\IntelligenceFramework\\BoxalinoIntelligenceFramework",
+    "copyright": "(c) by Boxalino AG",
+    "label": {
+      "de-DE": "Boxalino Framework für Shopware v6",
+      "en-GB": "Boxalino Framework for Shopware v6"
+    }
+  },
+  "require": {
+    "php": "^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Boxalino\\IntelligenceFramework\\": "src/"
+    }
+  }
+}

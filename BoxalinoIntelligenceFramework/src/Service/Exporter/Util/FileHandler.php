@@ -1,7 +1,7 @@
 <?php
-namespace Boxalino\IntelligenceFramework\Service\Exporter\Helper;
+namespace Boxalino\IntelligenceFramework\Service\Exporter\Util;
 
-class Content
+class FileHandler
 {
 
     /**
@@ -25,13 +25,12 @@ class Content
     protected $account;
     protected $_dir;
     protected $type;
+    protected $_files;
 
-    public function __construct()
-    {
-        $this->init();
-    }
-
-    protected function init() : void
+    /**
+     * Prepares rootr directory where the exported files are to be stored
+     */
+    public function init() : void
     {
         $this->cleanDir($this->_mainDir);
         $this->_dir = $this->_mainDir . $this->account . '_' . $this->type . '_' . microtime(true);
@@ -43,22 +42,10 @@ class Content
         }
     }
 
-    public function setAccount($account) : void
-    {
-        $this->account = $account;
-    }
-
-    public function setType($type) : void
-    {
-        $this->type = $type;
-    }
-
-    public function setMainDir($dirPath) : void
-    {
-        $this->_mainDir = $dirPath;
-    }
-
-    protected function cleanDir($dir) : void
+    /**
+     * @param string $dir
+     */
+    protected function cleanDir(string $dir) : void
     {
         foreach (scandir($dir) as $el) {
             if(!is_dir($el)) {
@@ -67,7 +54,10 @@ class Content
         }
     }
 
-    protected function delTree($dir) : void
+    /**
+     * @param string $dir
+     */
+    protected function delTree(string $dir) : void
     {
         $files = array_diff(scandir($dir), array('.', '..'));
         foreach ($files as $file) {
@@ -81,7 +71,11 @@ class Content
         return rmdir($dir);
     }
 
-    public function savePartToCsv($file, &$data) : void
+    /**
+     * @param string $file
+     * @param array $data
+     */
+    public function savePartToCsv(string $file, array &$data) : void
     {
         $path = $this->getPath($file);
         $fh = fopen($path, 'a');
@@ -93,13 +87,20 @@ class Content
         $data = null;
     }
 
-
-    public function getFileContents($file)
+    /**
+     * @param string $file
+     * @return string
+     */
+    public function getFileContents(string $file) : string
     {
         return file_get_contents($this->getPath($file));
     }
 
-    public function getPath($file)
+    /**
+     * @param string $file
+     * @return string
+     */
+    public function getPath(string $file) : string
     {
         //save
         if (!in_array($file, $this->_files)) {
@@ -107,6 +108,36 @@ class Content
         }
 
         return $this->_dir . '/' . $file;
+    }
+
+    /**
+     * @param $account
+     * @return FileHandler
+     */
+    public function setAccount(string $account) : FileHandler
+    {
+        $this->account = $account;
+        return $this;
+    }
+
+    /**
+     * @param string $type
+     * @return FileHandler
+     */
+    public function setType(string $type) : FileHandler
+    {
+        $this->type = $type;
+        return $this;
+    }
+
+    /**
+     * @param string $dirPath
+     * @return FileHandler
+     */
+    public function setMainDir(string $dirPath) : FileHandler
+    {
+        $this->_mainDir = $dirPath;
+        return $this;
     }
 
 }

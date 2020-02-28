@@ -1,5 +1,5 @@
 <?php
-namespace Boxalino\IntelligenceFramework\Service\Exporter;
+namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
 class Order implements ExporterInterface
 {

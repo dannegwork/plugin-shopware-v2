@@ -1,5 +1,5 @@
 <?php
-namespace Boxalino\IntelligenceFramework\Service\Exporter\Helper;
+namespace Boxalino\IntelligenceFramework\Service\Exporter\Util;
 
 /**
  * Class Library
@@ -8,7 +8,7 @@ namespace Boxalino\IntelligenceFramework\Service\Exporter\Helper;
  *
  * @package Boxalino\IntelligenceFramework\Service\Exporter\Service
  */
-class Library
+class ContentLibrary
 {
     const URL_VERIFY_CREDENTIALS = '/frontend/dbmind/en/dbmind/api/credentials/verify';
     const URL_XML = '/frontend/dbmind/en/dbmind/api/data/source/update';
@@ -17,8 +17,9 @@ class Library
 
     const URL_EXECUTE_TASK = '/frontend/dbmind/en/dbmind/files/task/execute';
 
-    private $bxClient;
-    private $languages;
+    private $account;
+    private $password;
+    private $languages = [];
     private $isDev;
     private $isDelta;
 
@@ -29,22 +30,53 @@ class Library
 
     private $owner = 'bx_client_data_api';
 
-    public function __construct($bxClient, $languages = array(), $isDev=false, $isDelta=false) {
-        $this->bxClient = $bxClient;
-        $this->languages = $languages;
-        $this->isDev = $isDev;
-        $this->isDelta = $isDelta;
+    public function setAccount($value)
+    {
+        $this->account = $value;
+        return $this;
     }
 
-    public function setLanguages($languages) {
-        $this->languages = $languages;
+    public function getAccount()
+    {
+        return $this->account;
     }
 
-    public function getLanguages() {
+    public function setPassword($value)
+    {
+        $this->password = $value;
+        return $this;
+    }
+
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    public function setUseDevIndex($value)
+    {
+        $this->isDev = $value;
+        return $this;
+    }
+
+    public function setIsDelta($value)
+    {
+        $this->isDelta = $value;
+        return $this;
+    }
+
+    public function setLanguages(array $languages)
+    {
+        $this->languages = $languages;
+        return $this;
+    }
+
+    public function getLanguages() : array
+    {
         return $this->languages;
     }
 
-    public function setDelimiter($delimiter) {
+    public function setDelimiter($delimiter)
+    {
         $this->delimiter = $delimiter;
     }
 
@@ -301,11 +333,11 @@ class Library
                                  $timezoneoffset=0, $pasvMode='MODE_DEFAULT', $maximumMultipeConnections=0, $encodingType='Auto', $bypassProxy=0, $syncBrowsing=0) {
 
         if($user==null){
-            $user = $this->bxClient->getAccount(false);
+            $user = $this->getAccount();
         }
 
         if($password==null){
-            $password = $this->bxClient->getPassword();
+            $password = $this->getPassword();
         }
 
         $params = array();
@@ -332,11 +364,11 @@ class Library
     public function setHttpSource($sourceKey, $webDirectory, $user=null, $password=null, $header='User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:41.0) Gecko/20100101 Firefox/41.0') {
 
         if($user===null){
-            $user = $this->bxClient->getAccount(false);
+            $user = $this->getAccount();
         }
 
         if($password===null){
-            $password = $this->bxClient->getPassword();
+            $password = $this->getPassword();
         }
 
         $params = array();
@@ -348,8 +380,8 @@ class Library
         $this->httpSources[$sourceId] = $params;
     }
 
-    public function getXML() {
-
+    public function getXML()
+    {
         $xml = new \SimpleXMLElement('<root/>');
 
         //languages
@@ -595,9 +627,9 @@ class Library
         }
 
         $fields = array(
-            'username' => $this->bxClient->getUsername(),
-            'password' => $this->bxClient->getPassword(),
-            'account' => $this->bxClient->getAccount(false),
+            'username' => $this->getAccount(),
+            'password' => $this->getPassword(),
+            'account' => $this->getAccount(),
             'owner' => $this->owner,
             'xml' => $this->getXML()
         );
@@ -619,9 +651,9 @@ class Library
             $publish = false;
         }
         $fields = array(
-            'username' => $this->bxClient->getUsername(),
-            'password' => $this->bxClient->getPassword(),
-            'account' => $this->bxClient->getAccount(false),
+            'username' => $this->getAccount(),
+            'password' => $this->getPassword(),
+            'account' => $this->getAccount(),
             'owner' => $this->owner,
             'publish' => ($publish ? 'true' : 'false')
         );
@@ -632,9 +664,9 @@ class Library
 
     public function verifyCredentials() {
         $fields = array(
-            'username' => $this->bxClient->getUsername(),
-            'password' => $this->bxClient->getPassword(),
-            'account' => $this->bxClient->getAccount(false),
+            'username' => $this->getAccount(),
+            'password' => $this->getPassword(),
+            'account' => $this->getAccount(),
             'owner' => $this->owner
         );
 
@@ -773,9 +805,9 @@ class Library
         $zipFile = $this->createZip($temporaryFilePath, 'bxdata.zip', $clearFiles);
 
         $fields = array(
-            'username' => $this->bxClient->getUsername(),
-            'password' => $this->bxClient->getPassword(),
-            'account' => $this->bxClient->getAccount(false),
+            'username' => $this->getAccount(),
+            'password' => $this->getPassword(),
+            'account' => $this->getAccount(),
             'owner' => $this->owner,
             'dev' => ($this->isDev ? 'true' : 'false'),
             'delta' => ($this->isDelta ? 'true' : 'false'),
@@ -797,7 +829,7 @@ class Library
     }
 
     public function getTaskExecuteUrl($taskName) {
-        return $this->host . self::URL_EXECUTE_TASK . '?iframeAccount=' . $this->bxClient->getAccount() . '&task_process=' . $taskName;
+        return $this->host . self::URL_EXECUTE_TASK . '?iframeAccount=' . $this->getAccount() . '&task_process=' . $taskName;
     }
 
     public function publishChoices($isTest = false, $taskName="generate_optimization") {
@@ -821,4 +853,5 @@ class Library
         $url = $this->getTaskExecuteUrl($taskName);
         file_get_contents($url);
     }
+
 }

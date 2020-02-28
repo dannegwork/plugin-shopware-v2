@@ -4,7 +4,7 @@
         <title>General Configuration</title>
         <title lang="de-DE">Minimale Konfiguration</title>
         <input-field type="bool">
-            <name>active</name>
+            <name>status</name>
             <defaultValue>0</defaultValue>
             <label>Plugin Status</label>
             <helpText>Is the overall Boxalino plugin active (global switch)?</helpText>
@@ -21,16 +21,16 @@
         </input-field>
         <input-field type="single-select">
             <name>index</name>
-            <defaultValue>0</defaultValue>
+            <defaultValue>1</defaultValue>
             <label>Data Index</label>
             <helpText>Is the account a development account or a production account?.</helpText>
             <options>
                 <option>
-                    <id>0</id>
+                    <id>1</id>
                     <name>Production</name>
                 </option>
                 <option>
-                    <id>1</id>
+                    <id>0</id>
                     <name>Development</name>
                 </option>
             </options>
@@ -98,7 +98,7 @@
             <label>Exporter Status</label>
         </input-field>
         <input-field type="bool">
-            <name>publishConfig</name>
+            <name>exportPublishConfig</name>
             <defaultValue>1</defaultValue>
             <label>Publish Configuration</label>
             <helpText>Yes by default. Any changes in product/customers/transaction properties will be automatically validated. For safety, it is recommended to de-activate this option once in production to make sure no unwanted changes are automatically published. However, if not activated, changes in the configuration will not be considered until published otherwise and, in the case of property deletions, the data sync might fail until the changes are published. Publishing of the configuration can be done by re-activating this option and running a full data sync again, or by publishing the configuration directly in Boxalino Data Intelligence web-admin.</helpText>

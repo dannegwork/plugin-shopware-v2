@@ -1,5 +1,5 @@
 <?php
-namespace Boxalino\IntelligenceFramework\Service\Exporter;
+namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Blog;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Brand;
@@ -22,7 +22,7 @@ class Product implements ExporterInterface
     protected $config;
     protected $account;
     protected $files;
-    protected $bxData;
+    protected $library;
     protected $log;
     protected $delta;
     protected $success;
@@ -169,29 +169,29 @@ class Product implements ExporterInterface
         }
         $end =  (microtime(true) - $startforeach) * 1000;
         $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
-        $mainSourceKey = $this->bxData->addMainCSVItemFile($this->files->getPath(self::BOXALINO_EXPORT_PRODUCTS_CSV), 'id');
-        $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
-        $this->bxData->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
-        $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
+        $mainSourceKey = $this->library->addMainCSVItemFile($this->files->getPath(self::BOXALINO_EXPORT_PRODUCTS_CSV), 'id');
+        $this->library->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
+        $this->library->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
+        $this->library->addSourceStringField($mainSourceKey, 'bx_type', 'id');
 
         $pc_field = $this->config->isVoucherExportEnabled($this->account) ?
             'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
             'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value';
-        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
-        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
+        $this->library->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
+        $this->library->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
 
         foreach ($main_properties as $property) {
             if ($property == 'id') {
                 continue;
             }
             if ($property == 'sales') {
-                $this->bxData->addSourceNumberField($mainSourceKey, $property, $property);
-                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
+                $this->library->addSourceNumberField($mainSourceKey, $property, $property);
+                $this->library->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
                 continue;
             }
-            $this->bxData->addSourceStringField($mainSourceKey, $property, $property);
+            $this->library->addSourceStringField($mainSourceKey, $property, $property);
             if ($property == 'group_id' || $property == 'releasedate' || $property == 'datum' || $property == 'changetime') {
-                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
+                $this->library->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
 
@@ -202,9 +202,9 @@ class Product implements ExporterInterface
         }
         $this->files->savePartToCsv(self::BOXALINO_EXPORT_PRODUCT_SHOP_CSV, $data);
         $data = null;
-        $sourceKey = $this->bxData->addCSVItemFile($this->files->getPath(self::BOXALINO_EXPORT_PRODUCT_SHOP_CSV), 'id');
-        $this->bxData->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
-        $this->bxData->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
+        $sourceKey = $this->library->addCSVItemFile($this->files->getPath(self::BOXALINO_EXPORT_PRODUCT_SHOP_CSV), 'id');
+        $this->library->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
+        $this->library->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
 
         $this->setSuccess(true);
     }
@@ -385,12 +385,12 @@ class Product implements ExporterInterface
     }
 
     /**
-     * @param mixed $bxData
+     * @param mixed $library
      * @return Product
      */
-    public function setBxData($bxData)
+    public function setLibrary($library)
     {
-        $this->bxData = $bxData;
+        $this->library = $library;
         return $this;
     }
 
@@ -418,5 +418,49 @@ class Product implements ExporterInterface
         }
 
         return $this;
+    }
+
+    /**
+     * Product purchasable logic depending on the default filter
+     *
+     * @param $row
+     * @return int
+     */
+    public function getProductPurchasableValue($row)
+    {
+        if($row['laststock'] == 1 && $row['instock'] == 0)
+        {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    /**
+     * Product immediate delivery logic as per default facet handler logic
+     *
+     * @see Shopware\Bundle\SearchBundleDBAL\FacetHandler\ImmediateDeliveryFacetHandler
+     * @param $row
+     * @return int
+     */
+    public function getProductImmediateDeliveryValue($row)
+    {
+        if($row['instock'] >= $row['minpurchase'])
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Group product value per solr logic
+     *
+     * @param $row
+     * @return mixed
+     */
+    public function getProductGroupValue($row)
+    {
+        return $row['articleID'];
     }
 }
