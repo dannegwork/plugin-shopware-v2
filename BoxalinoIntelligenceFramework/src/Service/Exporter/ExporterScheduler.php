@@ -1,4 +1,5 @@
 <?php
+namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
 use Doctrine\DBAL\Connection;
 
@@ -36,6 +37,7 @@ class ExporterScheduler
     }
 
     /**
+     * @param string $account
      * @return string
      */
     public function getLastExportByAccount(string $account)
@@ -50,13 +52,55 @@ class ExporterScheduler
             ->setMaxResults(1)
             ->setParameter("account", $account)
             ->setParameter("status", self::BOXALINO_EXPORTER_STATUS_SUCCESS);
-        $latestRecord = $query->execute->fetchColumn();
+        $latestRecord = $query->execute()->fetchColumn();
         if($latestRecord['export_date'])
         {
             $latestRun = $latestRecord['export_date'];
         }
 
         return $latestRun;
+    }
+
+    /**
+     * @param string $type
+     * @param string $account
+     * @return string
+     */
+    public function getLastExportByTypeAccount(string $type, string $account)
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select(['export_date'])
+            ->from("boxalino_exports")
+            ->andWhere("account = :account")
+            ->andWhere("status = :status")
+            ->andWhere("type = :type")
+            ->orderBy("export_date", "DESC")
+            ->setMaxResults(1)
+            ->setParameter("account", $account)
+            ->setParameter("type", $type)
+            ->setParameter("status", self::BOXALINO_EXPORTER_STATUS_SUCCESS);
+        $latestRecord = $query->execute()->fetchColumn();
+
+        return $latestRecord['export_date'];
+    }
+
+    /**
+     * @param string $type
+     * @return string
+     */
+    public function getLastExportByType(string $type)
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select(['export_date'])
+            ->from("boxalino_exports")
+            ->andWhere("account = :account")
+            ->andWhere("type = :type")
+            ->orderBy("export_date", "DESC")
+            ->setMaxResults(1)
+            ->setParameter("type", $type);
+        $latestRecord = $query->execute()->fetchColumn();
+
+        return $latestRecord['export_date'];
     }
 
     /**

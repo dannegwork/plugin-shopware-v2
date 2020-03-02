@@ -1,6 +1,8 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
+use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
+
 class ExporterDelta extends ExporterManager
 {
 
@@ -25,91 +27,50 @@ class ExporterDelta extends ExporterManager
 
     public function getExporterId(): string
     {
-        return self::EXPORTER_TYPE;
+        return ExporterScheduler::BOXALINO_EXPORTER_TYPE_DELTA;
     }
 
     /**
      * Get timeout for exporter
      * @return bool|int
      */
-    public function getTimeout($account)
+    public function getTimeout(string $account) : int
     {
         return self::SERVER_TIMEOUT_DEFAULT;
     }
 
     /**
      * If the exporter scheduler is enabled, the delta export time has to be validated
-     * 1. the delta can only be triggered between configured start-end hours
-     * 2. 2 subsequent deltas can only be run with the time difference configured
-     * 3. the delta after a full export can only be run after the configured time
+     * 2 subsequent deltas can only be run with the time difference allowed ( > 30min difference)
+     * the delta after a full export can only be run after 1h
      *
-     * @param $startExportDate
+     * @param string $account
      * @return bool
      */
-    public function exportDeniedOnAccount($account)
+    public function exportDeniedOnAccount(string $account) : bool
     {
-        if(!$this->config->isExportSchedulerEnabled($account))
+        $latestDeltaRunDate = $this->getLastExport($this->getType(), $account);
+        $deltaTimeRange = 60;
+        if($latestDeltaRunDate == min($latestDeltaRunDate, date("Y-m-d H:i:s", strtotime("-$deltaTimeRange min"))))
         {
             return false;
-        }
-
-        $startHour = $this->config->getExportSchedulerDeltaStart($account);
-        $endHour = $this->config->getExportSchedulerDeltaEnd($account);
-        $runDateStoreHour = $this->getCurrentStoreTime('H');;
-        if($runDateStoreHour === min(max($runDateStoreHour, $startHour), $endHour))
-        {
-            $latestDeltaRunDate = $this->getLatestUpdatedAt($this->getIndexerId());
-            $deltaTimeRange = $this->config->getExportSchedulerDeltaMinInterval($account);
-            if($latestDeltaRunDate == min($latestDeltaRunDate, date("Y-m-d H:i:s", strtotime("-$deltaTimeRange min"))))
-            {
-                return false;
-            }
-
-            return true;
         }
 
         return true;
     }
 
     /**
-     * Check latest run on delta
-     *
-     * @return false|string|null
-     */
-    public function getLatestRun()
-    {
-        if(is_null($this->latestRun))
-        {
-            $this->latestRun = $this->getLatestUpdatedAt($this->getExporterId());
-        }
-
-        if(empty($this->latestRun) || strtotime($this->latestRun) < 0)
-        {
-            $this->latestRun = date("Y-m-d H:i:s", strtotime("-1 hour"));
-        }
-
-        return $this->latestRun;
-    }
-
-    /**
      * @return array
      */
-    public function getIds()
+    public function getIds() : array
     {
-        $lastUpdateDate = $this->getLatestRun();
-        $directProductUpdates = $this->processResource->getProductIdsByUpdatedAt($lastUpdateDate);
-        if(empty($directProductUpdates))
-        {
-            return [];
-        }
-
-        return $directProductUpdates;
+        return [];
     }
 
     /**
      * @return bool
      */
-    public function getExportFull()
+    public function getExportFull() : bool
     {
         return false;
     }

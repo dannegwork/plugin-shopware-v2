@@ -11,5 +11,9 @@
         <service id="Boxalino\IntelligenceFramework\Core\Content\Boxalino\CronExportDefinition">
             <tag name="shopware.entity.definition" entity="boxalino_cron_export" />
         </service>
+
+        <service id="Boxalino\IntelligenceFramework\Service\Exporter\ExporterFull"/>
+        <service id="Boxalino\IntelligenceFramework\Service\Exporter\ExporterDelta"/>
+        <service id="Boxalino\IntelligenceFramework\Service\Exporter\Exporter"/>
     </services>
 </container>

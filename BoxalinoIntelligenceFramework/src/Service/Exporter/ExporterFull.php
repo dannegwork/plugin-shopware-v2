@@ -1,21 +1,21 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
+use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
+
 class ExporterFull extends ExporterManager
 {
 
     const EXPORTER_ID = 'boxalino.exporter.full';
 
-    const EXPORTER_TYPE = 'full';
-
     /**
      * Default server timeout
      */
-    const SERVER_TIMEOUT_DEFAULT = 3000;
+    const SERVER_TIMEOUT_DEFAULT = 300;
 
     public function getType(): string
     {
-        return self::EXPORTER_TYPE;
+        return ExporterScheduler::BOXALINO_EXPORTER_TYPE_FULL;
     }
 
     public function getExporterId(): string
@@ -23,16 +23,17 @@ class ExporterFull extends ExporterManager
         return self::EXPORTER_ID;
     }
 
-    public function exportDeniedOnAccount($account)
+    public function exportDeniedOnAccount(string $account) : bool
     {
         return false;
     }
 
     /**
      * Get timeout for exporter
+     * @param string $account
      * @return bool|int
      */
-    public function getTimeout($account)
+    public function getTimeout(string $account) : int
     {
         $customTimeout = $this->config->getExporterTimeout($account);
         if($customTimeout)
@@ -43,15 +44,6 @@ class ExporterFull extends ExporterManager
         return self::SERVER_TIMEOUT_DEFAULT;
     }
 
-    /**
-     * Latest run date is not checked for the full export
-     *
-     * @return null
-     */
-    public function getLatestRun()
-    {
-        return $this->getLatestUpdatedAt($this->getExporterId());;
-    }
 
     /**
      * Full export does not care for ids -- everything is exported
@@ -66,7 +58,7 @@ class ExporterFull extends ExporterManager
     /**
      * @return bool
      */
-    public function getExportFull()
+    public function getExportFull() : bool
     {
         return true;
     }

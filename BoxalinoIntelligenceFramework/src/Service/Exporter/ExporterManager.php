@@ -1,13 +1,9 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
-use Boxalino\IntelligenceFramework\Service\Exporter\Component\Customer;
-use Boxalino\IntelligenceFramework\Service\Exporter\Component\Order;
-use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
-use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
-use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
-use Doctrine\DBAL\Connection;
+use Boxalino\IntelligenceFramework\Service\Exporter\Exporter;
+use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use \Psr\Log\LoggerInterface;
 
 
@@ -20,7 +16,7 @@ abstract class ExporterManager
     protected $logger;
 
     /**
-     * @var \Boxalino\Intelligence\Helper\BxIndexConfig : containing the access to the configuration of each store to export
+     * @var Configuration containing the access to the configuration of each store to export
      */
     protected $config = null;
 
@@ -30,14 +26,9 @@ abstract class ExporterManager
     protected $deltaIds = [];
 
     /**
-     * @var \Magento\Indexer\Model\Indexer
+     * @var ExporterScheduler
      */
-    protected $indexerModel;
-
-    /**
-     * @var ProcessManagerResource
-     */
-    protected $processResource;
+    protected $scheduler;
 
     /**
      * @var null
@@ -45,38 +36,30 @@ abstract class ExporterManager
     protected $latestRun = null;
 
     /**
-     * @var \Boxalino\Intelligence\Model\Exporter\Service
+     * @var Exporter
      */
     protected $exporterService;
 
-    /**
-     * @var \Magento\Framework\Stdlib\DateTime\TimezoneInterface
-     */
-    protected $timezone;
-
 
     public function __construct(
-        Connection $connection,
-        Order $transactionExporter,
-        Customer $customerExporter,
-        Product $productExporter,
         LoggerInterface $logger,
         Configuration $exporterConfigurator,
-        ContentLibrary $library,
-        FileHandler $bxFiles
+        ExporterScheduler $scheduler,
+        Exporter $exporterService
     ) {
-        $this->transactionExporter = $transactionExporter;
-        $this->customerExporter = $customerExporter;
-        $this->productExporter = $productExporter;
-
         $this->config = $exporterConfigurator;
-        $this->connection = $connection;
         $this->logger = $logger;
-        $this->library = $library;
-        $this->bxFiles = $bxFiles;
+        $this->scheduler = $scheduler;
+        $this->exporterService = $exporterService;
     }
 
 
+    /**
+     * @TODO add date display by UTC and store view for latest runs/etc
+     *
+     * @return bool
+     * @throws \Exception
+     */
     public function run()
     {
         $accounts = $this->getAccounts();
@@ -88,23 +71,23 @@ abstract class ExporterManager
 
         $errorMessages = [];
         $latestRun = $this->getLatestRun();
-        $this->logger->info("BxIndexLog: starting Boxalino {$this->getType()} exporter process. Latest update at {$latestRun} (UTC)  / {$this->getStoreTime($latestRun)} (store time)");
+        $this->logger->info("BxIndexLog: starting Boxalino {$this->getType()} exporter process. Latest update at {$latestRun} (UTC)");
         $exporterHasRun = false;
         foreach($accounts as $account)
         {
             try{
-                if($this->exportAllowedByAccount($account))
-                {
+               # if($this->exportAllowedByAccount($account))
+                #{
                     $exporterHasRun = true;
                     $this->exporterService
+                        ->setDirPath("/media/danneg/Boxalino/")
                         ->setAccount($account)
-                        ->setDeltaIds($this->getIds())
-                        ->setIndexerType($this->getType())
-                        ->setIndexerId($this->getIndexerId())
+                        ->setType($this->getType())
+                        ->setExporterId($this->getExporterId())
                         ->setExportFull($this->getExportFull())
                         ->setTimeoutForExporter($this->getTimeout($account))
                         ->export();
-                }
+                #}
             } catch (\Exception $exception) {
                 $errorMessages[] = $exception->getMessage();
                 continue;
@@ -125,29 +108,21 @@ abstract class ExporterManager
     }
 
 
-    public function processCanRun()
+    public function exportAllowedByAccount(string $account) : bool
     {
-        if(($this->getType() == ExporterDelta::EXPORTER_TYPE) &&  $this->indexerModel->load(BxExporter::INDEXER_ID)->isWorking())
+        if($this->scheduler->canStartExport($this->getType(), $account))
         {
-            $this->logger->info("BxIndexLog: Delta exporter will not run. Full exporter process must finish first.");
-            return false;
+            return true;
         }
 
-        return true;
+        $this->logger->info("BxIndexLog: The {$this->getType()} export is denied permission to run on account {$account}. Check your exporter configurations.");
+        return false;
     }
 
-    public function exportAllowedByAccount($account)
-    {
-        if($this->exportDeniedOnAccount($account))
-        {
-            $this->logger->info("BxIndexLog: The {$this->getType()} export is denied permission to run. Check your exporter configurations.");
-            return false;
-        }
-
-        return true;
-    }
-
-    public function getAccounts()
+    /**
+     * @return array
+     */
+    public function getAccounts() : array
     {
         return $this->config->getAccounts();
     }
@@ -155,48 +130,41 @@ abstract class ExporterManager
     /**
      * Get indexer latest updated at
      *
-     * @param $id
+     * @param string $type
+     * @param string $account
      * @return string
      */
-    public function getLatestUpdatedAt($id)
+    public function getLastExport(string $type, string $account) : string
     {
-        return $this->processResource->getLatestUpdatedAtByIndexerId($id);
+        return $this->scheduler->getLastExportByTypeAccount($type, $account);
     }
 
     /**
-     * @param $indexerId
-     * @param $date
+     * Latest run date for the exporter type
+     *
+     * @return null
      */
-    public function updateProcessRunDate($date)
+    public function getLatestRun() : string
     {
-        $this->processResource->updateIndexerUpdatedAt($this->getIndexerId(), $date);
+        return $this->scheduler->getLastExportByType($this->getExporterId());
     }
 
-    public function getCurrentStoreTime($format = 'Y-m-d H:i:s')
+    /**
+     * @param string $format
+     * @return string
+     * @throws \Exception
+     */
+    public function getCurrentStoreTime(string $format = 'Y-m-d H:i:s') : string
     {
-        return $this->timezone->date()->format($format);
+        $time = new \DateTime();
+        return $time->format($format);
     }
 
-    public function getStoreTime($date)
-    {
-        return $this->timezone->formatDate($date, 1, true);
-    }
-
-    public function getUtcTime($time=null)
-    {
-        if(is_null($time)){
-            return $this->timezone->convertConfigTimeToUtc($this->getCurrentStoreTime());
-        }
-
-        return $this->timezone->convertConfigTimeToUtc($time);
-    }
-
-    abstract function getTimeout($account);
-    abstract function getLatestRun();
-    abstract function getIds();
-    abstract function exportDeniedOnAccount($account);
+    abstract function getTimeout(string $account) : int;
+    abstract function getIds() : array;
+    abstract function exportDeniedOnAccount(string $account) : bool;
     abstract function getType() : string;
-    abstract function getIndexerId() : string;
-    abstract function getExportFull();
+    abstract function getExporterId() : string;
+    abstract function getExportFull() : bool;
 
 }

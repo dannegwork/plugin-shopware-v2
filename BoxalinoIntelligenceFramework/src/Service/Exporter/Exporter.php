@@ -7,8 +7,8 @@ use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
+use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use Doctrine\DBAL\Connection;
-use ExporterScheduler;
 use LogicException;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
@@ -34,6 +34,7 @@ class Exporter
     protected $library;
     protected $files;
     protected $account;
+    protected $type;
 
 
     public function __construct(
@@ -45,7 +46,7 @@ class Exporter
         Configuration $exporterConfigurator,
         ContentLibrary $library,
         FileHandler $fileHandler,
-        \ExporterScheduler $scheduler
+        ExporterScheduler $scheduler
     ) {
         $this->transactionExporter = $transactionExporter;
         $this->customerExporter = $customerExporter;
@@ -72,18 +73,12 @@ class Exporter
         try {
             if(empty($account) || empty($dirPath))
             {
-                $message = "BxIndexLog: Cancelled Boxalino {$this->getType()} data sync. The account/directory path name can not be empty.";
-                $this->logger->warning($message);
-
-                return $message;
+                throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync. The account/directory path name can not be empty.");
             }
 
             if(!$this->scheduler->canStartExport($this->getType(), $this->getAccount()))
             {
-                $message = "BxIndexLog: Cancelled Boxalino {$this->getType()} data sync on {$account}. A different process is currently running.";
-                $this->logger->info($message);
-
-                return $message;
+                throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync on {$account}. A different process is currently running.");
             }
 
             $this->logger->info("BxIndexLog: Start of Boxalino {$this->getType()} data sync.");
@@ -95,8 +90,8 @@ class Exporter
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_PROCESSING, $account);
             $this->logger->info("BxIndexLog: Exporting store ID : {$this->configurator->getAccountChannelId($account)}");
 
-            $this->initFiles();             //new Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles($dirPath, $account, $type);
-            $this->initLibrary();             //new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_configurator->getAccountLanguages($account), $this->_configurator->isAccountDev($account), $this->delta);
+            $this->initFiles();
+            $this->initLibrary();
             $this->verifyCredentials();
 
             $this->logger->info('BxIndexLog: Preparing the attributes and category data for each language of the account: ' . $account);
@@ -109,26 +104,24 @@ class Exporter
                 $this->logger->info('BxIndexLog: No Products found for account: ' . $account);
                 $this->logger->info('BxIndexLog: Finished account: ' . $account);
             } else {
-                $systemMessages[] = $this->prepareXmlConfigurations();
-                $systemMessages[] = $this->pushToDI();
+                $this->prepareXmlConfigurations();
+                $this->pushToDI();
             }
 
             $this->logger->info("BxIndexLog: End of Boxalino {$this->getType()} data sync on account {$account}");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_SUCCESS, $this->getAccount());
             $this->logger->info("BxIndexLog: Log boxalino_exports {$this->getType()} data sync end for account {$account}");
         } catch(\Throwable $e) {
-            error_log("BxIndexLog: failed with exception: " .$e->getMessage(), 0);
             $this->logger->info("BxIndexLog: failed with exception: " . $e->getMessage());
 
             $this->logger->info("BxIndexLog: Log boxalino_exports {$this->getType()} data sync end for account {$account}");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_FAIL, $this->getAccount());
             $systemMessages[] = "BxIndexLog: failed with exception: ". $e->getMessage();
 
-            return implode("\n", $systemMessages);
+            throw new \Exception(implode(",",$systemMessages));
         }
 
-        $systemMessages[] = "BxIndexLog: End of Boxalino {$this->getType()} data sync on account {$account}";
-        return implode("\n", $systemMessages);
+        $this->logger->info("BxIndexLog: End of Boxalino {$this->getType()} data sync on account {$account}");
     }
 
 
@@ -210,7 +203,6 @@ class Exporter
             return false;
         }
 
-        $systemMessages = "";
         $this->logger->info('BxIndexLog: Prepare the final files: ' . $this->getAccount());
         $this->logger->info('BxIndexLog: Prepare XML configuration file: ' . $this->getAccount());
 
@@ -239,12 +231,11 @@ class Exporter
             }
             if(isset($changes['token']))
             {
-                $systemMessages = "BxIndexLog: New token for account {$this->getAccount()} - {$changes['token']}";
+                $this->logger->info("BxIndexLog: New token for account {$this->getAccount()} - {$changes['token']}");
             }
         }
 
         $this->logger->info('BxIndexLog: NORMAL - stop waiting for Data Intelligence processing for account: ' . $this->getAccount());
-        return $systemMessages;
     }
 
     /**
@@ -252,16 +243,12 @@ class Exporter
      */
     protected function pushToDI() :string
     {
-        $systemMessages = "";
         $this->logger->info('BxIndexLog: pushing to DI for account: ' . $this->getAccount());
         try {
             $this->getLibrary()->pushData($this->configurator->getExportTemporaryArchivePath($this->getAccount()), $this->getTimeoutForExporter($this->getAccount()));
         } catch(\LogicException $e){
             $this->logger->warning($e->getMessage());
-            return $e->getMessage();
         }
-
-        return $systemMessages;
     }
 
     /**
@@ -307,10 +294,18 @@ class Exporter
 
     /**
      * @param mixed $dirPath
+     * @return Exporter
      */
-    public function setDirPath(string $dirPath)
+    public function setDirPath(string $dirPath) : Exporter
     {
         $this->dirPath = $dirPath;
+        return $this;
+    }
+
+    public function setType(string $value) : Exporter
+    {
+        $this->type = $value;
+        return $this;
     }
 
     /**
