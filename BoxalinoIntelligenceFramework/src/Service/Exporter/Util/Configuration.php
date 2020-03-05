@@ -129,16 +129,16 @@ class Configuration
         ])
             ->from('sales_channel')
             ->leftJoin(
-                'sale_channel',
+                'sales_channel',
                 'sales_channel_language',
                 'mapping',
                 'sales_channel.id = mapping.sales_channel_id'
             )
             ->leftJoin(
-                'sale_channel',
-                'sale_channel_translation',
+                'sales_channel',
+                'sales_channel_translation',
                 'channel',
-                'sale_channel.id = channel.sales_channel_id'
+                'sales_channel.id = channel.sales_channel_id'
             )
             ->leftJoin(
                 'mapping',
@@ -173,7 +173,7 @@ class Configuration
      * @return mixed
      * @throws \Exception
      */
-    protected function getAccountConfig(string $account) : array
+    public function getAccountConfig(string $account) : array
     {
         if(isset($this->indexConfig[$account]))
         {
@@ -250,6 +250,26 @@ class Configuration
     }
 
     /**
+     * Getting additional tables for each entity to be exported (products, customers, transactions)
+     *
+     * @param string $account
+     * @param string $type
+     * @return array
+     * @throws \Exception
+     */
+    public function getAccountExtraTablesByComponent(string $account, string $type) : array
+    {
+        $config = $this->getAccountConfig($account);
+        $additionalTablesList = $config["{$type}ExtraTable"];
+        if($additionalTablesList)
+        {
+            return explode(',', $additionalTablesList);
+        }
+
+        return [];
+    }
+
+    /**
      * @param $account
      * @return mixed
      * @throws \Exception
@@ -270,7 +290,7 @@ class Configuration
      * @return mixed
      * @throws \Exception
      */
-    public function isDev(string $account) : bool
+    public function useDevIndex(string $account) : bool
     {
         $config = $this->getAccountConfig($account);
         return (bool) $config['index'];
@@ -289,13 +309,13 @@ class Configuration
 
     /**
      * @param $account
-     * @return mixed
+     * @return []
      * @throws \Exception
      */
-    public function getAccountLanguages(string $account) : string
+    public function getAccountLanguages(string $account) : array
     {
         $config = $this->getAccountConfig($account);
-        return $config['sales_channel_languages'];
+        return explode(",", $config['sales_channel_languages']);
     }
 
     /**
@@ -341,6 +361,26 @@ class Configuration
     }
 
     /**
+     * @TODO add new param
+     * @param string $account
+     * @return int
+     */
+    public function getExporterTimeout(string $account) : int
+    {
+        return 300;
+    }
+
+    /**
+     * @TODO add new param
+     * @param string $account
+     * @return int
+     */
+    public function getExporterTemporaryArchivePath(string $account) : int
+    {
+        return null;
+    }
+
+    /**
      * @param $account
      * @param $allProperties
      * @param array $requiredProperties
@@ -357,17 +397,18 @@ class Configuration
     }
 
     /**
-     * @param $account
-     * @param $allProperties
+     * @param string $account
+     * @param array $allProperties
      * @param array $requiredProperties
+     * @param array $excludedProperties
      * @return array
      * @throws \Exception
      */
-    public function getAccountCustomersProperties(string $account, array $allProperties, array $requiredProperties=[]) : array
+    public function getAccountCustomersProperties(string $account, array $allProperties, array $requiredProperties=[], array $excludedProperties=[]) : array
     {
         $config = $this->getAccountConfig($account);
         $includes = explode(',', $config['export_customer_include']);
-        $excludes = explode(',', $config['export_customer_exclude']);
+        $excludes = array_merge($excludedProperties, explode(',', $config['export_customer_exclude']));
 
         return $this->getFinalProperties($allProperties, $includes, $excludes, $requiredProperties);
     }

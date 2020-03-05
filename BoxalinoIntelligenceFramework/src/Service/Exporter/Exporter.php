@@ -14,17 +14,20 @@ use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Class Exporter
+ * @package Boxalino\IntelligenceFramework\Service\Exporter
+ */
 class Exporter
 {
 
-    protected $delta = false;
+    protected $isFull = false;
     protected $lastExport = null;
     protected $customerExporter;
     protected $transactionExporter;
     protected $productExporter;
 
-    protected $dirPath = null;
-    protected $connection;
+    protected $directory = null;
     protected $logger;
     protected $scheduler;
     protected $fileHandler;
@@ -35,10 +38,11 @@ class Exporter
     protected $files;
     protected $account;
     protected $type;
+    protected $exporterId;
+    protected $timeout;
 
 
     public function __construct(
-        Connection $connection,
         Order $transactionExporter,
         Customer $customerExporter,
         Product $productExporter,
@@ -53,7 +57,6 @@ class Exporter
         $this->productExporter = $productExporter;
 
         $this->configurator = $exporterConfigurator;
-        $this->connection = $connection;
         $this->logger = $logger;
         $this->library = $library;
         $this->fileHandler = $fileHandler;
@@ -68,10 +71,10 @@ class Exporter
     {
         set_time_limit(7200);
         $account = $this->getAccount();
-        $dirPath = $this->getDirPath();
+        $directory = $this->getDirectory();
 
         try {
-            if(empty($account) || empty($dirPath))
+            if(empty($account) || empty($directory))
             {
                 throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync. The account/directory path name can not be empty.");
             }
@@ -82,7 +85,7 @@ class Exporter
             }
 
             $this->logger->info("BxIndexLog: Start of Boxalino {$this->getType()} data sync.");
-            if($this->delta)
+            if(!$this->getIsFull())
             {
                 $this->logger->info("BxIndexLog: Exporting products updated since {$this->getLastExport()} data sync.");
             }
@@ -127,11 +130,15 @@ class Exporter
 
     /**
      * Exporting products and product elements (tags, manufacturers, category, prices, reviews, etc)
-     *
      */
     public function exportProducts()
     {
-        $this->productExporter->setAccount($this->getAccount())->setFiles($this->getFiles())->setLibrary($this->getLibrary())->setType($this->getType());
+        $this->productExporter->setAccount($this->getAccount())
+            ->setFiles($this->getFiles())
+            ->setLibrary($this->getLibrary())
+            ->setIsDelta(!$this->getIsFull())
+            ->setType($this->getType());
+
         $this->productExporter->export();
     }
 
@@ -158,7 +165,7 @@ class Exporter
 
         $this->fileHandler->setAccount($this->getAccount())
             ->setType($this->getType())
-            ->setMainDir($this->getDirPath())
+            ->setMainDir($this->getDirectory())
             ->init();
     }
 
@@ -172,7 +179,7 @@ class Exporter
         $this->getLibrary()->setAccount($this->getAccount())
             ->setPassword($this->configurator->getAccountPassword($this->getAccount()))
             ->setIsDelta($this->getDelta())
-            ->setUseDevIndex($this->configurator->isDev($this->getAccount()))
+            ->setUseDevIndex($this->configurator->useDevIndex($this->getAccount()))
             ->setLanguages($this->configurator->getAccountLanguages($this->getAccount())); #@TODO CREATE ACCESSOR FOR LANGUAGES
     }
 
@@ -198,7 +205,7 @@ class Exporter
      */
     protected function prepareXmlConfigurations() : string
     {
-        if ($this->delta)
+        if (!$this->getIsFull())
         {
             return false;
         }
@@ -245,7 +252,7 @@ class Exporter
     {
         $this->logger->info('BxIndexLog: pushing to DI for account: ' . $this->getAccount());
         try {
-            $this->getLibrary()->pushData($this->configurator->getExportTemporaryArchivePath($this->getAccount()), $this->getTimeoutForExporter($this->getAccount()));
+            $this->getLibrary()->pushData($this->configurator->getExportTemporaryArchivePath($this->getAccount()), $this->getTimeout());
         } catch(\LogicException $e){
             $this->logger->warning($e->getMessage());
         }
@@ -269,39 +276,43 @@ class Exporter
     /**
      * @return bool
      */
-    public function getDelta() : bool
+    public function getIsFull() : bool
     {
-        return $this->delta;
+        return $this->isFull;
     }
 
     /**
-     * @param bool $delta
+     * @param bool $value
      * @return $this
      */
-    public function setDelta(bool $delta)
+    public function setIsFull(bool $value)
     {
-        $this->delta = $delta;
+        $this->isFull = $value;
         return $this;
     }
 
     /**
      * @return string
      */
-    public function getDirPath() : string
+    public function getDirectory() : string
     {
-        return $this->dirPath;
+        return $this->directory;
     }
 
     /**
-     * @param mixed $dirPath
+     * @param mixed $directory
      * @return Exporter
      */
-    public function setDirPath(string $dirPath) : Exporter
+    public function setDirectory(string $directory) : Exporter
     {
-        $this->dirPath = $dirPath;
+        $this->directory = $directory;
         return $this;
     }
 
+    /**
+     * @param string $value
+     * @return Exporter
+     */
     public function setType(string $value) : Exporter
     {
         $this->type = $value;
@@ -313,12 +324,7 @@ class Exporter
      */
     public function getType() : string
     {
-        if($this->getDelta())
-        {
-            return ExporterScheduler::BOXALINO_EXPORTER_TYPE_DELTA;
-        }
-
-        return ExporterScheduler::BOXALINO_EXPORTER_TYPE_FULL;
+        return $this->type;
     }
 
     /**
@@ -353,6 +359,34 @@ class Exporter
     public function getAccount() : string
     {
         return $this->account;
+    }
+
+    /**
+     * @param string $id
+     * @return Exporter
+     */
+    public function setExporterId(string $id) : Exporter
+    {
+        $this->exporterId = $id;
+        return $this;
+    }
+
+    /**
+     * @param string $timeout
+     * @return Exporter
+     */
+    public function setTimeout(string $timeout) : Exporter
+    {
+        $this->timeout = $timeout;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getTimeout() : int
+    {
+        return $this->timeout;
     }
 
 }

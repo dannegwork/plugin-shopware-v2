@@ -136,8 +136,8 @@ class ContentLibrary
         return $this->addSourceFile($filePath, $sourceId, $container, 'resource', 'CSV', $params, $validate);
     }
 
-    public function setCSVTransactionFile($filePath, $orderIdColumn, $productIdColumn, $customerIdColumn, $orderDateIdColumn, $totalOrderValueColumn, $productListPriceColumn, $productDiscountedPriceColumn, $productIdField='bx_item_id', $customerIdField='bx_customer_id', $productsContainer = 'products', $customersContainer = 'customers', $format = 'CSV', $encoding = 'UTF-8', $delimiter = ',', $enclosure = '"', $escape = "\\\\", $lineSeparator = "\\n",$container = 'transactions', $sourceId = 'transactions', $validate=true) {
-
+    public function setCSVTransactionFile($filePath, $orderIdColumn, $productIdColumn, $customerIdColumn, $orderDateIdColumn, $totalOrderValueColumn, $productListPriceColumn, $productDiscountedPriceColumn, $currencyColumn, $emailColumn, $productIdField='bx_item_id', $customerIdField='bx_customer_id', $productsContainer = 'products', $customersContainer = 'customers', $format = 'CSV', $encoding = 'UTF-8', $delimiter = ',', $enclosure = '"', $escape = "\\\\", $lineSeparator = "\\n",$container = 'transactions', $sourceId = 'transactions', $validate=true)
+    {
         $params = array('encoding'=>$encoding, 'delimiter'=>$delimiter, 'enclosure'=>$enclosure, 'escape'=>$escape, 'lineSeparator'=>$lineSeparator);
 
         $params['file'] = $this->getFileNameFromPath($filePath);
@@ -150,8 +150,25 @@ class ContentLibrary
         $params['productDiscountedPriceColumn'] = $productDiscountedPriceColumn;
         $params['totalOrderValueColumn'] = $totalOrderValueColumn;
         $params['orderReceptionDateColumn'] = $orderDateIdColumn;
+        $params['currencyColumn'] = $currencyColumn;
+        $params['emailColumn'] = $emailColumn;
 
         return $this->addSourceFile($filePath, $sourceId, $container, 'transactions', $format, $params, $validate);
+    }
+
+    /**
+     * Adding an additional table file with the content as it has it
+     *
+     * @param $filePath
+     * @return string
+     * @throws \Exception
+     */
+    public function addExtraTableToEntity($filePath, $container, $column, $columns, $maxLength = 23)
+    {
+        $params = ['referenceIdColumn'=>$column, 'labelColumns'=>$columns, 'encoding' => 'UTF-8', 'delimiter'=>',', 'enclosure'=>'"', 'escape'=>"\\\\", 'lineSeparator'=>"\\n"];
+        $sourceId = $this->getSourceIdFromFileNameFromPath($filePath, $container, $maxLength, true);
+
+        return $this->addSourceFile($filePath, $sourceId, $container, 'resource', 'CSV', $params);
     }
 
     public function addSourceFile($filePath, $sourceId, $container, $type, $format='CSV', $params=array(), $validate=true) {
@@ -307,6 +324,16 @@ class ContentLibrary
 
     public function addSourceCustomerGuestProperty($sourceKey, $parameterValue) {
         $this->addSourceParameter($sourceKey, "guest_property_id", $parameterValue);
+    }
+
+    public function addSourceEmailProperty($sourceKey, $parameterValue)
+    {
+        $this->addSourceParameter($sourceKey, 'emailColumn', $parameterValue);
+    }
+
+    public function addSourceCurrencyProperty($sourceKey, $parameterValue)
+    {
+        $this->addSourceParameter($sourceKey, 'currencyColumn', $parameterValue);
     }
 
     public function addSourceParameter($sourceKey, $parameterName, $parameterValue) {
@@ -586,6 +613,11 @@ class ContentLibrary
 
         if($responseBody === false)
         {
+            if(strpos(curl_error($s), 'Operation timed out after') !== false)
+            {
+                throw new \LogicException("This is an expected scenario: the connection closed due to the timeout reach. Contact us at support@boxalino.com if you want updates on the exporter status. Original message:" . curl_error($s));
+            }
+
             if(strpos(curl_error($s), "couldn't open file") !== false) {
                 if($temporaryFilePath !== null) {
                     throw new \Exception('There seems to be a problem with the folder BxData uses to temporarily store a zip file with all your files before sending it. As you are currently provided a path, this is most likely the problem. Please make sure it is a valid path, or leave it to null (default value), then BxData will use sys_get_temp_dir() + "/bxclient" which typically works fine.');
@@ -710,6 +742,7 @@ class ContentLibrary
         }
         return $sourceId;
     }
+
 
     public function getFileNameFromPath($filePath, $withoutExtension=false) {
         $parts = explode('/', $filePath);

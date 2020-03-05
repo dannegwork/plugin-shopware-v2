@@ -80,12 +80,11 @@ abstract class ExporterManager
                 #{
                     $exporterHasRun = true;
                     $this->exporterService
-                        ->setDirPath("/media/danneg/Boxalino/")
                         ->setAccount($account)
                         ->setType($this->getType())
                         ->setExporterId($this->getExporterId())
-                        ->setExportFull($this->getExportFull())
-                        ->setTimeoutForExporter($this->getTimeout($account))
+                        ->setIsFull($this->getExportFull())
+                        ->setTimeout($this->getTimeout($account))
                         ->export();
                 #}
             } catch (\Exception $exception) {

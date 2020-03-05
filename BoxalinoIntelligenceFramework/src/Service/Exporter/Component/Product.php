@@ -1,8 +1,7 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
-use Boxalino\IntelligenceFramework\Service\Exporter\Item\Blog;
-use Boxalino\IntelligenceFramework\Service\Exporter\Item\Brand;
+use Boxalino\IntelligenceFramework\Service\Exporter\Item\Manufacturer;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Category;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Facet;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Images;
@@ -13,20 +12,15 @@ use Boxalino\IntelligenceFramework\Service\Exporter\Item\Url;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Votes;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Voucher;
 
-class Product implements ExporterInterface
+
+class Product extends ExporterComponentAbstract
 {
+
+    CONST EXPORTER_COMPONENT_MAIN_FILE = "products.csv";
+    const EXPORTER_COMPONENT_TYPE = "products";
 
     CONST BOXALINO_EXPORT_PRODUCT_SHOP_CSV = "product-shop.csv";
     CONST BOXALINO_EXPORT_PRODUCTS_CSV = "products.csv";
-
-    protected $config;
-    protected $account;
-    protected $files;
-    protected $library;
-    protected $log;
-    protected $delta;
-    protected $success;
-    protected $db;
 
     protected $deltaLast;
     protected $shopProductIds = array();
@@ -53,46 +47,114 @@ class Product implements ExporterInterface
      */
     protected $extraSteps = array();
 
-    public function __construct()
-    {
-        $this->db = Shopware()->Db();
-        $this->log = Shopware()->PluginLogger();
-    }
 
+    /**
+     * @return mixed
+     */
     public function export()
     {
         set_time_limit(7200);
+        $account = $this->getAccount();
         $this->log->info("BxIndexLog: Preparing products - main.");
-        $this->exportProducts();
-        $this->log->info("Main product after memory: " . memory_get_usage(true));
+        $export_products = $this->exportMainProducts();
+        $this->log->info("BxIndexLog: -- Main product after memory: " . memory_get_usage(true));
 
         $this->log->info("BxIndexLog: Finished products - main.");
-        $this->exportExtra();
-        $this->log->info("BxIndexLog: Finished P R O D U C T S.");
+        if ($export_products) {
+            $this->log->info("BxIndexLog: Preparing products - categories.");
+            $this->exportItemCategories();
+            $this->log->info("BxIndexLog: -- exportItemCategories after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - categories.");
+            $this->log->info("BxIndexLog: Preparing products - translations.");
+            $this->exportItemTranslationFields();
+            $this->log->info("BxIndexLog: -- exportItemTranslationFields after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - translations.");
+            $this->log->info("BxIndexLog: Preparing products - brands.");
+            $this->exportItemBrands();
+            $this->log->info("BxIndexLog: -- exportItemBrands after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - brands.");
+            $this->log->info("BxIndexLog: Preparing products - facets.");
+            $this->exportItemFacets();
+            $this->log->info("BxIndexLog: -- exportItemFacets after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - facets.");
+            $this->log->info("BxIndexLog: Preparing products - price.");
+            $this->exportItemPrices();
+            $this->log->info("BxIndexLog: -- exportItemPrices after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - price.");
+            if ($this->config->exportProductImages($account)) {
+                $this->log->info("BxIndexLog: Preparing products - image.");
+                $this->exportItemImages();
+                $this->log->info("BxIndexLog: -- exportItemImages after memory: " . memory_get_usage(true));
+                $this->logger->info("BxIndexLog: Finished products - image.");
+            }
+            if ($this->config->exportProductUrl($account)) {
+                $this->logger->info("BxIndexLog: Preparing products - url.");
+                $this->exportItemUrls();
+                $this->logger->info("exportItemUrls after memory: " . memory_get_usage(true));
+                $this->logger->info("BxIndexLog: Finished products - url.");
+            }
+            if(!$this->delta) {
+                $this->logger->info("BxIndexLog: Preparing products - blogs.");
+                $this->exportItemBlogs();
+                $this->logger->info("BxIndexLog: -- exportItemBlogs after memory: " . memory_get_usage(true));
+                $this->logger->info("BxIndexLog: Finished products - blogs.");
+            }
+            $this->logger->info("BxIndexLog: Preparing products - votes.");
+            $this->exportItemVotes();
+            $this->logger->info("BxIndexLog: -- exportItemVotes after memory: " . memory_get_usage(true));
+            $this->logger->info("BxIndexLog: Finished products - votes.");
+            $this->logger->info("BxIndexLog: Preparing products - product streams.");
+            $this->exportProductStreams();
+            $this->logger->info("BxIndexLog: -- exportProductStreams after memory: " . memory_get_usage(true));
+            $this->logger->info("BxIndexLog: Finished products - product streams.");
+            if ($this->config->isVoucherExportEnabled($account)) {
+                $this->logger->info("BxIndexLog: Preparing products - voucher.");
+                $this->logger->info("BxIndexLog: Preparing vouchers.");
+                $this->exportVouchers();
+                $this->logger->info("BxIndexLog: -- exportVouchers after memory: " . memory_get_usage(true));
+                $this->logger->info("BxIndexLog: Finished products - voucher.");
+            }
+
+            $this->logger->info("BxIndexLog: Products - exporting additional tables for account: {$account}");
+            $this->exportExtraTables('products', $this->config->getAccountExtraTablesByEntityType($account,'products'));
+        }
+
+        return $export_products;
     }
 
-    protected function exportProducts()
+
+    /**
+     * Export products as they are in an unified view
+     * Create products.csv
+     *
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function exportMainProducts()
     {
         $db = $this->db;
-        $product_attributes = $this->getProductAttributes();
+        $account = $this->getAccount();
+        $files = $this->getFiles();
+        $product_attributes = $this->getProductAttributes($account);
         $product_properties = array_flip($product_attributes);
 
         $countMax = 100000000;
         $limit = 1000000;
         $header = true;
         $data = array();
-
-        $categoryShopIds = $this->config->getShopCategoryIds($this->account);
-        $main_shop_id = $this->config->getAccountStoreId($this->account);
+        $categoryShopIds = $this->config->getShopCategoryIds($account);
+        $main_shop_id = $this->config->getAccountStoreId($account);
         $startforeach = microtime(true);
-
-        foreach ($this->config->getAccountLanguages($this->account) as $shop_id => $language) {
+        foreach ($this->config->getAccountLanguages($account) as $shop_id => $language)
+        {
             $logCount = 0;
             $log = true;
             $totalCount = 0;
             $page = 1;
             $category_id = $categoryShopIds[$shop_id];
-            while ($countMax > $totalCount + $limit) {
+            while ($countMax > $totalCount + $limit)
+            {
                 $sql = $db->select()
                     ->from(array('s_articles'), $product_properties)
                     ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', array())
@@ -116,7 +178,7 @@ class Product implements ExporterInterface
                         $currentCount++;
                         if($log) {
                             $end = (microtime(true) - $start) * 1000;
-                            $this->log->info("Main product query (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true));
+                            $this->logger->info("BxIndexLog: -- Main product query (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true));
                             $log = false;
                         }
                         if (is_null($row['price'])) {
@@ -128,12 +190,12 @@ class Product implements ExporterInterface
                         }
                         $this->shopProductIds[$row['id']] = $shop_id;
                         unset($row['price']);
-                        $row['purchasable'] = ($row['laststock'] == 1 && $row['instock'] == 0) ? 0 : 1;
-                        $row['immediate_delivery'] = ($row['instock'] >= $row['minpurchase']) ? 1 : 0;
+                        $row['purchasable'] = $this->getProductPurchasableValue($row);
+                        $row['immediate_delivery'] = $this->getProductImmediateDeliveryValue($row);
                         if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
                             $this->deltaIds[$row['articleID']] = $row['articleID'];
                         }
-                        $row['group_id'] = $row['articleID'];
+                        $row['group_id'] = $this->getProductGroupValue($row);
                         if($header) {
                             $main_properties = array_keys($row);
                             $data[] = $main_properties;
@@ -142,24 +204,23 @@ class Product implements ExporterInterface
                         $data[] = $row;
                         $totalCount++;
                         if(sizeof($data)  > 1000){
-                            $this->files->savePartToCsv(self::BOXALINO_EXPORT_PRODUCTS_CSV, $data);
+                            $files->savePartToCsv('products.csv', $data);
                             $data = [];
                         }
                     }
                     if($logCount++%5 == 0) {
                         $end = (microtime(true) - $start) * 1000;
-                        $this->log->info("Main product data process (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true) . ", totalCount: $totalCount");
+                        $this->logger->info("Main product data process (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true) . ", totalCount: $totalCount");
                         $log = true;
                     }
                 } else {
                     if ($totalCount == 0 && $main_shop_id == $shop_id) {
-                        $this->setSuccess(false);
                         return false;
                     }
                     break;
                 }
 
-                $this->files->savePartToCsv(self::BOXALINO_EXPORT_PRODUCTS_CSV, $data);
+                $files->savePartToCsv('products.csv', $data);
                 $data = [];
                 $page++;
                 if($currentCount < $limit -1) {
@@ -167,31 +228,32 @@ class Product implements ExporterInterface
                 }
             }
         }
-        $end =  (microtime(true) - $startforeach) * 1000;
-        $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
-        $mainSourceKey = $this->library->addMainCSVItemFile($this->files->getPath(self::BOXALINO_EXPORT_PRODUCTS_CSV), 'id');
-        $this->library->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
-        $this->library->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
-        $this->library->addSourceStringField($mainSourceKey, 'bx_type', 'id');
 
-        $pc_field = $this->config->isVoucherExportEnabled($this->account) ?
+        $end =  (microtime(true) - $startforeach) * 1000;
+        $this->logger->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
+        $mainSourceKey = $this->getLibrary()->addMainCSVItemFile($files->getPath('products.csv'), 'id');
+        $this->getLibrary()->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
+        $this->getLibrary()->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
+        $this->getLibrary()->addSourceStringField($mainSourceKey, 'bx_type', 'id');
+        $pc_field = $this->config->isVoucherExportEnabled($account) ?
             'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
             'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value';
-        $this->library->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
-        $this->library->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
+        $this->getLibrary()->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
+        $this->getLibrary()->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
 
-        foreach ($main_properties as $property) {
+        foreach ($main_properties as $property)
+        {
             if ($property == 'id') {
                 continue;
             }
             if ($property == 'sales') {
-                $this->library->addSourceNumberField($mainSourceKey, $property, $property);
-                $this->library->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
+                $this->getLibrary()->addSourceNumberField($mainSourceKey, $property, $property);
+                $this->getLibrary()->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
                 continue;
             }
-            $this->library->addSourceStringField($mainSourceKey, $property, $property);
+            $this->getLibrary()->addSourceStringField($mainSourceKey, $property, $property);
             if ($property == 'group_id' || $property == 'releasedate' || $property == 'datum' || $property == 'changetime') {
-                $this->library->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
+                $this->getLibrary()->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
 
@@ -200,13 +262,54 @@ class Product implements ExporterInterface
             $data[] = [$id, $shopIds];
             $this->shopProductIds[$id] = true;
         }
-        $this->files->savePartToCsv(self::BOXALINO_EXPORT_PRODUCT_SHOP_CSV, $data);
+        $this->files->savePartToCsv('product_shop.csv', $data);
         $data = null;
-        $sourceKey = $this->library->addCSVItemFile($this->files->getPath(self::BOXALINO_EXPORT_PRODUCT_SHOP_CSV), 'id');
-        $this->library->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
-        $this->library->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
+        $sourceKey = $this->getLibrary()->addCSVItemFile($this->files->getPath('product_shop.csv'), 'id');
+        $this->getLibrary()->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
+        $this->getLibrary()->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
 
-        $this->setSuccess(true);
+        return true;
+    }
+
+    /**
+     * Getting a list of product attributes and the table it comes from
+     * To be used in the general SQL select
+     *
+     * @return array
+     */
+    public function getProductAttributes()
+    {
+        $account = $this->getAccount();
+        $all_attributes = array();
+        $exclude = array_merge($this->translationFields, array('articleID','id','active', 'articledetailsID'));
+        $db = $this->db;
+        $db_name = $db->getConfig()['dbname'];
+        $tables = ['s_articles', 's_articles_details', 's_articles_attributes'];
+        $select = $db->select()
+            ->from(
+                array('col' => 'information_schema.columns'),
+                array('COLUMN_NAME', 'TABLE_NAME')
+            )
+            ->where('col.TABLE_SCHEMA = ?', $db_name)
+            ->where("col.TABLE_NAME IN (?)", $tables);
+
+        $attributes = $db->fetchAll($select);
+        foreach ($attributes as $attribute) {
+
+            if (in_array($attribute['COLUMN_NAME'], $exclude)) {
+                if ($attribute['TABLE_NAME'] != 's_articles_details') {
+                    continue;
+                }
+            }
+            $key = "{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}";
+            $all_attributes[$key] = $attribute['COLUMN_NAME'];
+        }
+
+        $requiredProperties = array('id','articleID');
+        $filteredAttributes = $this->_config->getAccountProductsProperties($account, $all_attributes, $requiredProperties);
+        $filteredAttributes['s_articles.active'] = 'bx_parent_active';
+
+        return $filteredAttributes;
     }
 
 
@@ -216,6 +319,7 @@ class Product implements ExporterInterface
         {
             return $this;
         }
+        
         $exporter = new Category();
         $this->_exportExtra("categories", $exporter);
         unset($exporter);
@@ -224,7 +328,7 @@ class Product implements ExporterInterface
         $this->_exportExtra("translations", $exporter);
         unset($exporter);
 
-        $exporter = new Brand();
+        $exporter = new Manufacturer();
         $this->_exportExtra("brands", $exporter);
         unset($exporter);
 
@@ -252,13 +356,6 @@ class Product implements ExporterInterface
             unset($exporter);
         }
 
-        if (!$this->delta) //it means it is a full export
-        {
-            $exporter = new Blog();
-            $this->_exportExtra("blog", $exporter);
-            unset($exporter);
-        }
-
         $exporter = new Votes();
         $this->_exportExtra("votes", $exporter);
         unset($exporter);
@@ -279,49 +376,11 @@ class Product implements ExporterInterface
 
     protected function _exportExtra($step, $exporter)
     {
-        $this->log->info("BxIndexLog: Preparing products - {$step}.");
+        $this->logger->info("BxIndexLog: Preparing products - {$step}.");
         $exporter->setAccount($this->account)->setFiles($this->files)->setShopProductIds($this->shopProductIds);
         $exporter->export();
-        $this->log->info("{$step}Exporter after memory: " . memory_get_usage(true));
-        $this->log->info("BxIndexLog: Finished products - {$step}.");
-    }
-
-    /**
-     * @param $account
-     * @return mixed
-     */
-    protected function getProductAttributes() {
-
-        $all_attributes = array();
-        $exclude = array_merge($this->translationFields, array('articleID','id','active', 'articledetailsID'));
-        $db = $this->db;
-        $db_name = $db->getConfig()['dbname'];
-        $tables = ['s_articles', 's_articles_details', 's_articles_attributes'];
-        $select = $db->select()
-            ->from(
-                array('col' => 'information_schema.columns'),
-                array('COLUMN_NAME', 'TABLE_NAME')
-            )
-            ->where('col.TABLE_SCHEMA = ?', $db_name)
-            ->where("col.TABLE_NAME IN (?)", $tables);
-
-        $attributes = $db->fetchAll($select);
-        foreach ($attributes as $attribute) {
-
-            if (in_array($attribute['COLUMN_NAME'], $exclude)) {
-                if ($attribute['TABLE_NAME'] != 's_articles_details') {
-                    continue;
-                }
-            }
-            $key = "{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}";
-            $all_attributes[$key] = $attribute['COLUMN_NAME'];
-        }
-
-        $requiredProperties = array('id','articleID');
-        $filteredAttributes = $this->config->getAccountProductsProperties($this->account, $all_attributes, $requiredProperties);
-        $filteredAttributes['s_articles.active'] = 'bx_parent_active';
-
-        return $filteredAttributes;
+        $this->logger->info("{$step}Exporter after memory: " . memory_get_usage(true));
+        $this->logger->info("BxIndexLog: Finished products - {$step}.");
     }
 
     /**
@@ -341,67 +400,6 @@ class Product implements ExporterInterface
             }
         }
         return $this->deltaLast;
-    }
-
-    public function setSuccess($success)
-    {
-        $this->success = $success;
-        return $this;
-    }
-
-    public function getSuccess()
-    {
-        return $this->success;
-    }
-
-    /**
-     * @param mixed $config
-     * @return Product
-     */
-    public function setConfig($config)
-    {
-        $this->config = $config;
-        return $this;
-    }
-
-    /**
-     * @param mixed $account
-     * @return Product
-     */
-    public function setAccount($account)
-    {
-        $this->account = $account;
-        return $this;
-    }
-
-    /**
-     * @param mixed $files
-     * @return Product
-     */
-    public function setFiles($files)
-    {
-        $this->files = $files;
-        return $this;
-    }
-
-    /**
-     * @param mixed $library
-     * @return Product
-     */
-    public function setLibrary($library)
-    {
-        $this->library = $library;
-        return $this;
-    }
-
-    /**
-     * @param mixed $type
-     * @return Product
-     */
-    public function setDelta($type)
-    {
-        $this->delta = $type;
-        return $this;
     }
 
     /**

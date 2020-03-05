@@ -113,6 +113,11 @@
             <label> Products - Exclude Properties</label>
             <helpText>Optional: list of product properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of product properties to include is not empty.</helpText>
         </input-field>
+        <input-field type="text">
+            <name>productsExtraTable</name>
+            <label>Products - Extra Tables</label>
+            <helpText>Optional: list of additional tables related to the products entity, separated by ','; the tables are to be exported as they are.</helpText>
+        </input-field>
         <input-field type="bool">
             <name>exportProductImages</name>
             <defaultValue>1</defaultValue>
@@ -139,6 +144,11 @@
             <name>exportCustomerExclude</name>
             <label>Customers - Exclude Properties</label>
             <helpText>Optional: list of customer properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of customer properties to include is not empty.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>customersExtraTable</name>
+            <label>Customers - Extra Tables</label>
+            <helpText>Optional: list of additional tables related to the customers entity, separated by ','; the tables are to be exported as they are.</helpText>
         </input-field>
         <input-field type="bool">
             <name>exportTransactionEnable</name>
@@ -170,6 +180,11 @@
             <name>exportTransactionExclude</name>
             <label>Transactions - Exclude Properties</label>
             <helpText>Optional: list of transactions properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of transactions/orders properties to include is not empty.</helpText>
+        </input-field>
+        <input-field type="text">
+            <name>transactionsExtraTable</name>
+            <label>Transactions - Extra Tables</label>
+            <helpText>Optional: list of additional tables related to the transactions entity, separated by ','; the tables are to be exported as they are.</helpText>
         </input-field>
         <input-field type="bool">
             <name>exportVoucherEnable</name>
