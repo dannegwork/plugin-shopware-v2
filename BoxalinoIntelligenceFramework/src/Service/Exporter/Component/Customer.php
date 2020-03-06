@@ -1,10 +1,7 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
-
 use Doctrine\DBAL\ParameterType;
-use Shopware\Core\Defaults;
-use Shopware\Core\Framework\Uuid\Uuid;
 
 class Customer extends ExporterComponentAbstract
 {
@@ -29,12 +26,14 @@ class Customer extends ExporterComponentAbstract
     public function exportComponent()
     {
         $this->logger->debug("BxIndexLog: Customers - start collecting customers for account {$this->getAccount()}");
-        $attributes = $this->getAttributeTableMapping($this->getAccount());
+        $attributes = $this->getFields();
         $properties = array_merge([
             'locale.code as languagecode',
             'country.iso as countryiso',
             'country_state_translation.name as statename',
-            'sale_channel_translation.name as shopname'
+            'sale_channel_translation.name as shopname',
+            'payment_method_translation.name as preffered_payment_method',
+            'salutation_translation.display_name as salutation'
         ], array_flip($attributes));
         $header = true;
         $firstShop = true;
@@ -62,6 +61,7 @@ class Customer extends ExporterComponentAbstract
             {
                 $query = $this->connection->createQueryBuilder();
                 $query->select($properties)
+                    ->from('customer')
                     ->leftJoin(
                         'customer',
                         "( " . $latestOrderSQL->__toString() . ") ",
@@ -91,6 +91,18 @@ class Customer extends ExporterComponentAbstract
                         'sales_channel_translation',
                         'channel',
                         'sales_channel.id = channel.sales_channel_id'
+                    )
+                    ->leftJoin(
+                        'customer',
+                        'payment_method_translation',
+                        'payment_method_translation',
+                        'customer.default_payment_method_id = payment_method_translation.payment_method_id'
+                    )
+                    ->leftJoin(
+                        'customer',
+                        'salutation_translation',
+                        'salutation_translation',
+                        'customer.salutation_id = salutation_translation.salutation_id AND customer.language_id = salutation_translation.language_id'
                     )
                     ->andWhere("locale.code=:language")
                     ->andWhere("sales_channel.id=:channelId")
@@ -128,13 +140,12 @@ class Customer extends ExporterComponentAbstract
         }
     }
 
-
     /**
      * Getting the customer attributes list
      * @return []
      * @throws \Exception
      */
-    public function getAttributeTableMapping() : array
+    public function getFields() : array
     {
         $this->logger->info('BxIndexLog: get all customer attributes for account: ' . $this->getAccount());
 

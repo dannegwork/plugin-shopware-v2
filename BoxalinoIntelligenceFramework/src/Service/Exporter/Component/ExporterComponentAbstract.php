@@ -74,7 +74,8 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     }
 
     abstract function exportComponent();
-    abstract function getRequiredProperties();
+    abstract function getRequiredProperties() : array;
+    abstract function getFields() : array;
 
 
     /**
