@@ -29,27 +29,9 @@ class Order extends ExporterComponentAbstract
         $attributes = $this->getFields();
         $addressAttributes = $this->getAddressFields();
         $properties = array_flip(array_merge($attributes, $addressAttributes));
-
-        $quoted2 = $db->quote(2);
-        $oInvoiceAmount = $this->qi('s_order.invoice_amount');
-        $oInvoiceShipping = $this->qi('s_order.invoice_shipping');
-        $oCurrencyFactor = $this->qi('s_order.currencyFactor');
-        $dPrice = $this->qi('s_order_details.price');
-        $properties = array_merge($properties,
-            array(
-                'total_order_value' => new Zend_Db_Expr(
-                    "ROUND($oInvoiceAmount * $oCurrencyFactor, $quoted2)"),
-                'shipping_costs' => new Zend_Db_Expr(
-                    "ROUND($oInvoiceShipping * $oCurrencyFactor, $quoted2)"),
-                'price' => new Zend_Db_Expr(
-                    "ROUND($dPrice * $oCurrencyFactor, $quoted2)"),
-                'detail_status' => 's_order_details.status'
-            )
-        );
-
         $properties = [
             'oli.id', 'oli.order_id', 'oli.identifier', 'oli.product_id', 'oli.label', 'oli.type', 'oli.quantity', 'oli.unit_price', 'oli.total_price', 'oli.stackable', 'oli.removable', 'oli.good', 'oli.position', 'oli.created_at AS order_item_created_at',
-            'o.auto_increment', 'o.order_number', 'o.billing_address_id', 'o.sales_channel_id', 'o.order_date_time', 'o.order_date', 'o.ammount_total AS total_order_value', 'o.ammount_net', 'o.tax_status', 'o.shipping_costs', 'o.affiliate_code', 'o.campaign_code', 'o.created_at',
+            'o.auto_increment', 'o.order_number', 'o.billing_address_id', 'o.sales_channel_id', 'o.order_date_time', 'o.order_date', 'o.ammount_total AS total_order_value', 'o.ammount_net', 'o.tax_status', 'o.shipping_total as shipping_costs', 'o.affiliate_code', 'o.campaign_code', 'o.created_at',
             'smso.technical_name AS order_state', 'smsd.technical_name AS shipping_state', 'smst.technical_name AS transaction_state','c.iso_code AS currency', 'locale.code as language',
             'oc.email', 'oc. first_name', 'oc.last_name', 'oc.title', 'oc.company', 'oc.customer_number', 'oc.customer_id', 'oc.custom_fields AS customer_custom_fields',
             'country.iso as country_iso', 'cst.name as state_name',
@@ -71,7 +53,7 @@ class Order extends ExporterComponentAbstract
         $date = date("Y-m-d", strtotime("-1 month"));
         $mode = $this->config->getTransactionMode($this->getAccount());
         $firstShop = true;
-        foreach ($this->config->getAccountLanguages($this->getAccount()) as $language) {
+        foreach ($this->config->getAccountLanguages($this->getAccount()) as $languageId => $language) {
             $page = 1;
             while ($countMax > $totalCount + $limit)
             {

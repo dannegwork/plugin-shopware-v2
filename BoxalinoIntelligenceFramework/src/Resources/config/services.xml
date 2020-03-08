@@ -15,5 +15,9 @@
         <service id="Boxalino\IntelligenceFramework\Service\Exporter\ExporterFull"/>
         <service id="Boxalino\IntelligenceFramework\Service\Exporter\ExporterDelta"/>
         <service id="Boxalino\IntelligenceFramework\Service\Exporter\Exporter"/>
+
+        <service id="Boxalino\IntelligenceFramework\Service\Exporter\ExporterCommand">
+            <tag name="console.command"/>
+        </service>
     </services>
 </container>

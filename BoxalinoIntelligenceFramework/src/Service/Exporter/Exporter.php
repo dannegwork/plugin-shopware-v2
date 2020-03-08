@@ -16,12 +16,20 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Class Exporter
+ * Data exporting service
  * @package Boxalino\IntelligenceFramework\Service\Exporter
  */
 class Exporter
 {
 
+    /**
+     * @var bool
+     */
     protected $isFull = false;
+
+    /**
+     * @var null
+     */
     protected $lastExport = null;
     protected $customerExporter;
     protected $transactionExporter;
@@ -79,10 +87,10 @@ class Exporter
                 throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync. The account/directory path name can not be empty.");
             }
 
-            if(!$this->scheduler->canStartExport($this->getType(), $this->getAccount()))
-            {
-                throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync on {$account}. A different process is currently running.");
-            }
+//            if(!$this->scheduler->canStartExport($this->getType(), $this->getAccount()))
+  //          {
+    //            throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync on {$account}. A different process is currently running.");
+      //      }
 
             $this->logger->info("BxIndexLog: Start of Boxalino {$this->getType()} data sync.");
             if(!$this->getIsFull())
@@ -150,7 +158,7 @@ class Exporter
     {
         if(is_null($this->lastExport))
         {
-            $this->lastExport = $this->scheduler->getLastExportByAccount($this->getAccount());
+            $this->lastExport = $this->scheduler->getLastSuccessfulExportByAccount($this->getAccount());
         }
 
         return $this->lastExport;

@@ -6,7 +6,12 @@ use Boxalino\IntelligenceFramework\Service\Exporter\Exporter;
 use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use \Psr\Log\LoggerInterface;
 
-
+/**
+ * Class ExporterManager
+ * Handles generic logic for the data exporting to Boxalino DI server
+ *
+ * @package Boxalino\IntelligenceFramework\Service\Exporter
+ */
 abstract class ExporterManager
 {
 
@@ -34,6 +39,11 @@ abstract class ExporterManager
      * @var null
      */
     protected $latestRun = null;
+
+    /**
+     * @var null
+     */
+    protected $account = null;
 
     /**
      * @var Exporter
@@ -70,14 +80,13 @@ abstract class ExporterManager
         }
 
         $errorMessages = [];
-        $latestRun = $this->getLatestRun();
-        $this->logger->info("BxIndexLog: starting Boxalino {$this->getType()} exporter process. Latest update at {$latestRun} (UTC)");
+        $this->logger->info("BxIndexLog: starting Boxalino {$this->getType()} exporter process.");
         $exporterHasRun = false;
         foreach($accounts as $account)
         {
             try{
-               # if($this->exportAllowedByAccount($account))
-                #{
+                if($this->exportAllowedByAccount($account))
+                {
                     $exporterHasRun = true;
                     $this->exporterService
                         ->setAccount($account)
@@ -86,7 +95,7 @@ abstract class ExporterManager
                         ->setIsFull($this->getExportFull())
                         ->setTimeout($this->getTimeout($account))
                         ->export();
-                #}
+                }
             } catch (\Exception $exception) {
                 $errorMessages[] = $exception->getMessage();
                 continue;
@@ -109,7 +118,7 @@ abstract class ExporterManager
 
     public function exportAllowedByAccount(string $account) : bool
     {
-        if($this->scheduler->canStartExport($this->getType(), $account))
+        if($this->scheduler->canStartExport($this->getType(), $account) && !$this->exportDeniedOnAccount($account))
         {
             return true;
         }
@@ -119,44 +128,39 @@ abstract class ExporterManager
     }
 
     /**
+     * Returns either the specific account to run the exporter for OR the list of accounts configured for all the channels
+     *
      * @return array
      */
     public function getAccounts() : array
     {
-        return $this->config->getAccounts();
+        if(is_null($this->account))
+        {
+            return $this->config->getAccounts();
+        }
+
+        return [$this->account];
     }
 
     /**
      * Get indexer latest updated at
      *
-     * @param string $type
      * @param string $account
      * @return string
      */
-    public function getLastExport(string $type, string $account) : string
+    public function getLastExport(string $account) : string
     {
-        return $this->scheduler->getLastExportByTypeAccount($type, $account);
+        return $this->scheduler->getLastSuccessfulExportByTypeAccount($this->getType(), $account);
     }
 
     /**
-     * Latest run date for the exporter type
-     *
-     * @return null
+     * @param string $account
+     * @return ExporterManager
      */
-    public function getLatestRun() : string
+    public function setAccount(string $account) : ExporterManager
     {
-        return $this->scheduler->getLastExportByType($this->getExporterId());
-    }
-
-    /**
-     * @param string $format
-     * @return string
-     * @throws \Exception
-     */
-    public function getCurrentStoreTime(string $format = 'Y-m-d H:i:s') : string
-    {
-        $time = new \DateTime();
-        return $time->format($format);
+        $this->account = $account;
+        return $this;
     }
 
     abstract function getTimeout(string $account) : int;

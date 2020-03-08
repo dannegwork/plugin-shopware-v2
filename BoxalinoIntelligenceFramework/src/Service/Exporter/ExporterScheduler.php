@@ -40,9 +40,8 @@ class ExporterScheduler
      * @param string $account
      * @return string
      */
-    public function getLastExportByAccount(string $account)
+    public function getLastSuccessfulExportByAccount(string $account)
     {
-        $latestRun = date("Y-m-d H:i:s", strtotime("-30 minutes"));
         $query = $this->connection->createQueryBuilder();
         $query->select(['export_date'])
             ->from("boxalino_exports")
@@ -53,12 +52,12 @@ class ExporterScheduler
             ->setParameter("account", $account)
             ->setParameter("status", self::BOXALINO_EXPORTER_STATUS_SUCCESS);
         $latestRecord = $query->execute()->fetchColumn();
-        if($latestRecord['export_date'])
+        if(empty($latestRecord['export_date']) || is_null($latestRecord['export_date']))
         {
-            $latestRun = $latestRecord['export_date'];
+            return "NAN";
         }
 
-        return $latestRun;
+        return $latestRecord['export_date'];
     }
 
     /**
@@ -66,7 +65,7 @@ class ExporterScheduler
      * @param string $account
      * @return string
      */
-    public function getLastExportByTypeAccount(string $type, string $account)
+    public function getLastSuccessfulExportByTypeAccount(string $type, string $account)
     {
         $query = $this->connection->createQueryBuilder();
         $query->select(['export_date'])
@@ -80,25 +79,10 @@ class ExporterScheduler
             ->setParameter("type", $type)
             ->setParameter("status", self::BOXALINO_EXPORTER_STATUS_SUCCESS);
         $latestRecord = $query->execute()->fetchColumn();
-
-        return $latestRecord['export_date'];
-    }
-
-    /**
-     * @param string $type
-     * @return string
-     */
-    public function getLastExportByType(string $type)
-    {
-        $query = $this->connection->createQueryBuilder();
-        $query->select(['export_date'])
-            ->from("boxalino_exports")
-            ->andWhere("account = :account")
-            ->andWhere("type = :type")
-            ->orderBy("export_date", "DESC")
-            ->setMaxResults(1)
-            ->setParameter("type", $type);
-        $latestRecord = $query->execute()->fetchColumn();
+        if(empty($latestRecord['export_date']) || is_null($latestRecord['export_date']))
+        {
+            return "NAN";
+        }
 
         return $latestRecord['export_date'];
     }
@@ -149,7 +133,7 @@ class ExporterScheduler
      */
     public function canStartExport(string $type, string $account) : bool
     {
-        $allowedHour = date("Y-m-d H:i:s", strtotime("-30min"));
+        $stuckProcessTime = date("Y-m-d H:i:s", strtotime("-15min"));
         $query = $this->connection->createQueryBuilder();
         $query->select(['export_date', 'account'])
             ->from('boxalino_exports')
@@ -165,38 +149,17 @@ class ExporterScheduler
             {
                 return true;
             }
-
-            $latestFull = $this->getLatestFullExportPerAccount($account);
-            if($latestFull['export_date'] === min($allowedHour, $latestFull['export_date']))
-            {
-                return true;
-            }
-
-            return false;
         }
 
         foreach($processes as $process)
         {
-            if($process['export_date'] === min(date("Y-m-d H:i:s", strtotime("-15min")), $process['export_date']))
+            if($stuckProcessTime == min($stuckProcessTime, $process['export_date']))
             {
-                continue;
+                return false;
             }
-
-            return false;
         }
 
-        if($type == self::BOXALINO_EXPORTER_TYPE_FULL)
-        {
-            return true;
-        }
-
-        $latestRunOnAccount = $this->getLatestFullExportPerAccount($account);
-        if($latestRunOnAccount['export_date'] == min($allowedHour, $latestRunOnAccount['export_date']))
-        {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**

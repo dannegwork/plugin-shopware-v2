@@ -32,7 +32,7 @@ class Customer extends ExporterComponentAbstract
             'country.iso as countryiso',
             'country_state_translation.name as statename',
             'sale_channel_translation.name as shopname',
-            'payment_method_translation.name as preffered_payment_method',
+            'payment_method_translation.name as preferred_payment_method',
             'salutation_translation.display_name as salutation'
         ], array_flip($attributes));
         $header = true;
@@ -49,7 +49,7 @@ class Customer extends ExporterComponentAbstract
             ->from("(" . $latestAddressSQL->__toString() .")", "latest_address" )
             ->leftJoin("latest_address", "order_address", 'oc', 'oc.id=latest_address.max_id');
 
-        foreach ($this->config->getAccountLanguages($this->getAccount()) as $language) 
+        foreach ($this->config->getAccountLanguages($this->getAccount()) as $languageId => $language)
         {
             $data = [];
             $countMax = 1000000;
@@ -81,12 +81,6 @@ class Customer extends ExporterComponentAbstract
                         'customer_address.country_state_id = country_state_translation.country_state_id AND customer.language_id = country_state_translation.language_id'
                     )
                     ->leftJoin(
-                        'language',
-                        'locale',
-                        'locale',
-                        'language.locale_id = locale.id'
-                    )
-                    ->leftJoin(
                         'sales_channel',
                         'sales_channel_translation',
                         'channel',
@@ -104,11 +98,11 @@ class Customer extends ExporterComponentAbstract
                         'salutation_translation',
                         'customer.salutation_id = salutation_translation.salutation_id AND customer.language_id = salutation_translation.language_id'
                     )
-                    ->andWhere("locale.code=:language")
+                    ->andWhere("customer.language_id=:languageId")
                     ->andWhere("sales_channel.id=:channelId")
                     ->groupBy('customer.id')
                     ->setParameter('channelId', $this->config->getAccountChannelId($this->getAccount()), ParameterType::BINARY)
-                    ->setParameter('language', $language, ParameterType::STRING)
+                    ->setParameter('languageId', $languageId, ParameterType::BINARY)
                     ->setFirstResult(($page - 1) * $limit)
                     ->setMaxResults($limit);
 
@@ -167,7 +161,7 @@ class Customer extends ExporterComponentAbstract
     /**
      * @return array
      */
-    public function getRequiredProperties()
+    public function getRequiredProperties() : array
     {
         return [
             'id',
@@ -184,7 +178,7 @@ class Customer extends ExporterComponentAbstract
     /**
      * @return array
      */
-    public function getExcludedProperties()
+    public function getExcludedProperties() : array
     {
         return [
             'password',

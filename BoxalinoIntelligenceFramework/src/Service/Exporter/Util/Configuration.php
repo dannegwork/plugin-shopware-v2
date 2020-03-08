@@ -141,10 +141,10 @@ class Configuration
                 'sales_channel.id = channel.sales_channel_id'
             )
             ->leftJoin(
-                'mapping',
+                'sales_channel_language',
                 'language',
                 'language',
-                'mapping.language_id = language.id'
+                'sales_channel_language.language_id = language.id'
             )
             ->leftJoin(
                 'language',
@@ -315,7 +315,9 @@ class Configuration
     public function getAccountLanguages(string $account) : array
     {
         $config = $this->getAccountConfig($account);
-        return explode(",", $config['sales_channel_languages']);
+        $languages = explode(",", $config['sales_channel_languages_locale']);
+        $languageIds = explode(",", $config['sales_channel_languages_id']);
+        return array_combine($languageIds, $languages);
     }
 
     /**
@@ -368,6 +370,36 @@ class Configuration
     public function getExporterTimeout(string $account) : int
     {
         return 300;
+    }
+
+    /**
+     * Time interval after a full data export that a delta is allowed to run
+     * It is set in order to avoid overlapping index updates
+     *
+     * @param string $account
+     * @return int
+     * @throws \Exception
+     */
+    public function getDeltaScheduleTime(string $account) : int
+    {
+        $config = $this->getAccountConfig($account);
+        if(isset($config['exportCronSchedule']) && !empty($config['exportCronSchedule']))
+        {
+            return $config['exportCronSchedule'];
+        }
+
+        return 60;
+    }
+
+    /**
+     * Minimum time interval between 2 deltas to allow a run (minutes)
+     *
+     * @param string $account
+     * @return int
+     */
+    public function getDeltaFrequencyMinInterval(string $account) : int
+    {
+        return 30;
     }
 
     /**

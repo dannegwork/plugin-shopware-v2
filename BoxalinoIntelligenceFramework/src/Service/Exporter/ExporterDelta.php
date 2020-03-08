@@ -8,8 +8,6 @@ class ExporterDelta extends ExporterManager
 
     const EXPORTER_ID = 'boxalino.exporter.delta';
 
-    const EXPORTER_TYPE = 'delta';
-
     /**
      * Default server timeout
      */
@@ -40,18 +38,26 @@ class ExporterDelta extends ExporterManager
     }
 
     /**
-     * If the exporter scheduler is enabled, the delta export time has to be validated
-     * 2 subsequent deltas can only be run with the time difference allowed ( > 30min difference)
-     * the delta after a full export can only be run after 1h
+     * 2 subsequent deltas can only be run with the time difference allowed
+     * the delta after a full export can only be run after the configured time only
      *
      * @param string $account
      * @return bool
+     * @throws \Exception
      */
     public function exportDeniedOnAccount(string $account) : bool
     {
-        $latestDeltaRunDate = $this->getLastExport($this->getType(), $account);
-        $deltaTimeRange = 60;
-        if($latestDeltaRunDate == min($latestDeltaRunDate, date("Y-m-d H:i:s", strtotime("-$deltaTimeRange min"))))
+        $latestDeltaRunDate = $this->getLastExport($account);
+        $latestFullRunDate = $this->scheduler->getLastSuccessfulExportByTypeAccount(ExporterScheduler::BOXALINO_EXPORTER_TYPE_FULL, $account);
+        $deltaFrequency = $this->config->getDeltaFrequencyMinInterval($account);
+        $deltaFullRange = $this->config->getDeltaScheduleTime($account);
+
+        if($latestFullRunDate != min($latestFullRunDate, date('Y-m-d H:i:s', strtotime("-$deltaFullRange min"))))
+        {
+            return true;
+        }
+
+        if($latestDeltaRunDate == min($latestDeltaRunDate, date("Y-m-d H:i:s", strtotime("-$deltaFrequency min"))))
         {
             return false;
         }
