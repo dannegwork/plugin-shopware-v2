@@ -47,7 +47,7 @@ class ExporterDelta extends ExporterManager
      */
     public function exportDeniedOnAccount(string $account) : bool
     {
-        $latestDeltaRunDate = $this->getLastExport($account);
+        $latestDeltaRunDate = $this->getLastSuccessfulExport($account);
         $latestFullRunDate = $this->scheduler->getLastSuccessfulExportByTypeAccount(ExporterScheduler::BOXALINO_EXPORTER_TYPE_FULL, $account);
         $deltaFrequency = $this->config->getDeltaFrequencyMinInterval($account);
         $deltaFullRange = $this->config->getDeltaScheduleTime($account);

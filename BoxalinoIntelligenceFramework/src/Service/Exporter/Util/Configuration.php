@@ -120,12 +120,14 @@ class Configuration
         $query = $this->connection->createQueryBuilder();
         $query->select([
             'LOWER(sales_channel.id) as sales_channel_id',
+            'sales_channel.language_id AS sales_channel_default_language_id',
+            'sales_channel.currency_id AS sales_channel_default_currency_id',
             'sales_channel.customer_group_id as sales_channel_customer_group_id',
             'channel.name as sales_channel_name',
             "GROUP_CONCAT(SUBSTR(locale.code, 0, 2) SEPARATOR ',') as sales_channel_languages_locale",
             "GROUP_CONCAT(language.id SEPARATOR ',') as sales_channel_languages_id",
-            'sales_channel.navigation_category_id as sales_channel_navigation_category_id',
-            'sales_channel.navigation_category_version_id as sales_channel_navigation_category_version_id'
+            'LOWER(HEX(sales_channel.navigation_category_id)) as sales_channel_navigation_category_id',
+            'LOWER(HEX(sales_channel.navigation_category_version_id)) as sales_channel_navigation_category_version_id'
         ])
             ->from('sales_channel')
             ->leftJoin(
@@ -158,6 +160,16 @@ class Configuration
             ->setParameter('type', Uuid::fromHexToBytes(Defaults::SALES_CHANNEL_TYPE_STOREFRONT));
 
         return $query->execute()->fetchAll();
+    }
+
+    /**
+     * @param string $account
+     * @throws \Exception
+     */
+    public function getChannelDefaultLanguageId(string $account)
+    {
+        $config = $this->getAccountConfig($account);
+        return $config['sales_channel_default_language_id'];
     }
 
     /**
@@ -243,10 +255,15 @@ class Configuration
      * @return string
      * @throws \Exception
      */
-    public function getTransactionMode(string $account) : string
+    public function getExportTransactionIncremental(string $account) : string
     {
         $config = $this->getAccountConfig($account);
-        return $config['exportTransactionMode'];
+        if($config['exportTransactionMode'])
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -422,8 +439,8 @@ class Configuration
     public function getAccountProductsProperties(string $account, array $allProperties, array $requiredProperties=[]) : array
     {
         $config = $this->getAccountConfig($account);
-        $includes = explode(',', $config['export_product_include']);
-        $excludes = explode(',', $config['export_product_exclude']);
+        $includes = explode(',', $config['exportProductInclude']);
+        $excludes = explode(',', $config['exportProductExclude']);
 
         return $this->getFinalProperties($allProperties, $includes, $excludes, $requiredProperties);
     }
@@ -439,8 +456,8 @@ class Configuration
     public function getAccountCustomersProperties(string $account, array $allProperties, array $requiredProperties=[], array $excludedProperties=[]) : array
     {
         $config = $this->getAccountConfig($account);
-        $includes = explode(',', $config['export_customer_include']);
-        $excludes = array_merge($excludedProperties, explode(',', $config['export_customer_exclude']));
+        $includes = array_filter(explode(',', $config['exportCustomerInclude']));
+        $excludes = array_merge($excludedProperties, explode(',', $config['exportCustomerExclude']));
 
         return $this->getFinalProperties($allProperties, $includes, $excludes, $requiredProperties);
     }
@@ -455,8 +472,8 @@ class Configuration
     public function getAccountTransactionsProperties(string $account, array $allProperties, array $requiredProperties=[]) : array
     {
         $config = $this->getAccountConfig($account);
-        $includes = explode(',', $config['export_transaction_include']);
-        $excludes = explode(',', $config['export_transaction_exclude']);
+        $includes = array_filter(explode(',', $config['exportTransactionInclude']));
+        $excludes = array_filter(explode(',', $config['exportTransactionExclude']));
 
         return $this->getFinalProperties($allProperties, $includes, $excludes, $requiredProperties);
     }
@@ -471,18 +488,6 @@ class Configuration
      */
     protected function getFinalProperties($allProperties, $includes, $excludes, $requiredProperties=[]) : array
     {
-        foreach($includes as $k => $incl) {
-            if($incl == "") {
-                unset($includes[$k]);
-            }
-        }
-
-        foreach($excludes as $k => $excl) {
-            if($excl == "") {
-                unset($excludes[$k]);
-            }
-        }
-
         if(sizeof($includes) > 0) {
             foreach($includes as $incl) {
                 if(!in_array($incl, $allProperties)) {

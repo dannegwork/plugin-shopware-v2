@@ -173,7 +173,7 @@ class ContentLibrary
 
     public function addSourceFile($filePath, $sourceId, $container, $type, $format='CSV', $params=array(), $validate=true) {
         if(sizeof($this->getLanguages())==0) {
-            throw new \Exception("trying to add a source before having declared the languages with method setLanguages");
+            throw new \Exception("BoxalinoLibraryError: trying to add a source before having declared the languages with method setLanguages");
         }
         if(!isset($this->sources[$container])) {
             $this->sources[$container] = array();
@@ -240,7 +240,7 @@ class ContentLibrary
         }
         $row = $this->getSourceCSVRow($container, $sourceId, 0);
         if($row !== null && !in_array($col, $row)) {
-            throw new \Exception("the source '$sourceId' in the container '$container' declares an column '$col' which is not present in the header row of the provided CSV file: " . implode(',', $row));
+            throw new \Exception("BoxalinoLibraryError: the source '$sourceId' in the container '$container' declares an column '$col' which is not present in the header row of the provided CSV file: " . implode(',', $row));
         }
     }
 
@@ -294,14 +294,14 @@ class ContentLibrary
         if($this->sources[$container][$sourceId]['format'] == 'CSV') {
             if($localized && $referenceSourceKey == null) {
                 if(!is_array($colMap)) {
-                    throw new \Exception("'$fieldName': invalid column field name for a localized field (expect an array with a column name for each language array(lang=>colName)): " . serialize($colMap));
+                    throw new \Exception("BoxalinoLibraryError: '$fieldName': invalid column field name for a localized field (expect an array with a column name for each language array(lang=>colName)): " . serialize($colMap));
                 }
                 foreach($this->getLanguages() as $lang) {
                     if(!isset($colMap[$lang])) {
-                        throw new \Exception("'$fieldName': no language column provided for language '$lang' in provided column map): " . serialize($colMap));
+                        throw new \Exception("BoxalinoLibraryError: '$fieldName': no language column provided for language '$lang' in provided column map): " . serialize($colMap));
                     }
                     if(!is_string($colMap[$lang])) {
-                        throw new \Exception("'$fieldName': invalid column field name for a non-localized field (expect a string): " . serialize($colMap));
+                        throw new \Exception("BoxalinoLibraryError: '$fieldName': invalid column field name for a non-localized field (expect a string): " . serialize($colMap));
                     }
                     if($validate) {
                         $this->validateColumnExistance($container, $sourceId, $colMap[$lang]);
@@ -309,7 +309,7 @@ class ContentLibrary
                 }
             } else {
                 if(!is_string($colMap)) {
-                    throw new \Exception("'$fieldName' invalid column field name for a non-localized field (expect a string): " . serialize($colMap));
+                    throw new \Exception("BoxalinoLibraryError: '$fieldName' invalid column field name for a non-localized field (expect a string): " . serialize($colMap));
                 }
                 if($validate) {
                     $this->validateColumnExistance($container, $sourceId, $colMap);
@@ -339,7 +339,7 @@ class ContentLibrary
     public function addSourceParameter($sourceKey, $parameterName, $parameterValue) {
         list($container, $sourceId) = $this->decodeSourceKey($sourceKey);
         if(!isset($this->sources[$container][$sourceId])) {
-            throw new \Exception("trying to add a source parameter on sourceId '$sourceId', container '$container' while this source doesn't exist");
+            throw new \Exception("BoxalinoLibraryError: trying to add a source parameter on sourceId '$sourceId', container '$container' while this source doesn't exist");
         }
         $this->sources[$container][$sourceId][$parameterName] = $parameterValue;
     }
@@ -347,7 +347,7 @@ class ContentLibrary
     public function addFieldParameter($sourceKey, $fieldName, $parameterName, $parameterValue) {
         list($container, $sourceId) = $this->decodeSourceKey($sourceKey);
         if(!isset($this->sources[$container][$sourceId]['fields'][$fieldName])) {
-            throw new \Exception("trying to add a field parameter on sourceId '$sourceId', container '$container', fieldName '$fieldName' while this field doesn't exist");
+            throw new \Exception("BoxalinoLibraryError: trying to add a field parameter on sourceId '$sourceId', container '$container', fieldName '$fieldName' while this field doesn't exist");
         }
         if(!isset($this->sources[$container][$sourceId]['fields'][$fieldName]['fieldParameters'])) {
             $this->sources[$container][$sourceId]['fields'][$fieldName]['fieldParameters'] = array();
@@ -357,8 +357,8 @@ class ContentLibrary
 
     private $ftpSources = array();
     public function setFtpSource($sourceKey, $host="di1.bx-cloud.com", $port=21, $user=null, $password=null, $remoteDir = '/sources/production', $protocol=0, $type=0, $logontype=1,
-                                 $timezoneoffset=0, $pasvMode='MODE_DEFAULT', $maximumMultipeConnections=0, $encodingType='Auto', $bypassProxy=0, $syncBrowsing=0) {
-
+                                 $timezoneoffset=0, $pasvMode='MODE_DEFAULT', $maximumMultipeConnections=0, $encodingType='Auto', $bypassProxy=0, $syncBrowsing=0)
+    {
         if($user==null){
             $user = $this->getAccount();
         }
@@ -487,7 +487,7 @@ class ContentLibrary
                 foreach($parameters as $parameter => $defaultValue) {
                     $value = isset($sourceValues[$parameter]) ? $sourceValues[$parameter] : $defaultValue;
                     if($value === false) {
-                        throw new \Exception("source parameter '$parameter' required but not defined in source id '$sourceId' for container '$containerName'");
+                        throw new \Exception("BoxalinoLibraryError: source parameter '$parameter' required but not defined in source id '$sourceId' for container '$containerName'");
                     }
                     $param = $source->addChild($parameter);
                     if(is_array($value)) {
@@ -615,17 +615,17 @@ class ContentLibrary
         {
             if(strpos(curl_error($s), 'Operation timed out after') !== false)
             {
-                throw new \LogicException("This is an expected scenario: the connection closed due to the timeout reach. Contact us at support@boxalino.com if you want updates on the exporter status. Original message:" . curl_error($s));
+                throw new \LogicException("BoxalinoLibraryError: This is an expected scenario: the connection closed due to the timeout reach. Contact us at support@boxalino.com if you want updates on the exporter status. Original message:" . curl_error($s));
             }
 
             if(strpos(curl_error($s), "couldn't open file") !== false) {
                 if($temporaryFilePath !== null) {
-                    throw new \Exception('There seems to be a problem with the folder BxData uses to temporarily store a zip file with all your files before sending it. As you are currently provided a path, this is most likely the problem. Please make sure it is a valid path, or leave it to null (default value), then BxData will use sys_get_temp_dir() + "/bxclient" which typically works fine.');
+                    throw new \Exception('BoxalinoLibraryError: There seems to be a problem with the folder BxData uses to temporarily store a zip file with all your files before sending it. As you are currently provided a path, this is most likely the problem. Please make sure it is a valid path, or leave it to null (default value), then BxData will use sys_get_temp_dir() + "/bxclient" which typically works fine.');
                 } else {
-                    throw new \Exception('There seems to be a problem with the folder BxData uses to temporarily store a zip file with all your files before sending it. This means that the default path BxData uses sys_get_temp_dir() + "/bxclient" is not supported and you need to path a working path to the pushData function.');
+                    throw new \Exception('BoxalinoLibraryError: There seems to be a problem with the folder BxData uses to temporarily store a zip file with all your files before sending it. This means that the default path BxData uses sys_get_temp_dir() + "/bxclient" is not supported and you need to path a working path to the pushData function.');
                 }
             }
-            throw new \Exception('Curl error: ' . curl_error($s));
+            throw new \Exception('BoxalinoLibraryError: Curl error: ' . curl_error($s));
         }
 
         curl_close($s);
@@ -641,7 +641,7 @@ class ContentLibrary
 
     public function checkResponseBody($responseBody, $url) {
         if($responseBody == null) {
-            throw new \Exception("API response of call to $url is empty string, this is an error!");
+            throw new \Exception("BoxalinoLibraryError: API response of call to $url is empty string, this is an error!");
         }
         $value = json_decode($responseBody, true);
         if(sizeof($value) != 1 || !isset($value['token'])) {
@@ -655,7 +655,7 @@ class ContentLibrary
     public function pushDataSpecifications($ignoreDeltaException=false) {
 
         if(!$ignoreDeltaException && $this->isDelta) {
-            throw new \Exception("You should not push specifications when you are pushing a delta file. Only do it when you are preparing full files. Set method parameter ignoreDeltaException to true to ignore this exception and publish anyway.");
+            throw new \Exception("BoxalinoLibraryError: You should not push specifications when you are pushing a delta file. Only do it when you are preparing full files. Set method parameter ignoreDeltaException to true to ignore this exception and publish anyway.");
         }
 
         $fields = array(
@@ -733,7 +733,7 @@ class ContentLibrary
         if($this->alreadyExistingSourceId($sourceId, $container)) {
             if(!$shortened) {
                 throw new \Exception(
-                    'Synchronization failure: Same source id requested twice "' .
+                    'BoxalinoLibraryError: Synchronization failure: Same source id requested twice "' .
                     $filePath . '". Please correct that only created once.'
                 );
             }
@@ -797,7 +797,7 @@ class ContentLibrary
             foreach ($files as $f => $filePath) {
                 if (!$zip->addFile($filePath, $f)) {
                     throw new \Exception(
-                        'Synchronization failure: Failed to add file "' .
+                        'BoxalinoLibraryError: Synchronization failure: Failed to add file "' .
                         $filePath . '" to the zip "' .
                         $name . '". Please try again.'
                     );
@@ -806,21 +806,21 @@ class ContentLibrary
 
             if (!$zip->addFromString ('properties.xml', $this->getXML())) {
                 throw new \Exception(
-                    'Synchronization failure: Failed to add xml string to the zip "' .
+                    'BoxalinoLibraryError: Synchronization failure: Failed to add xml string to the zip "' .
                     $name . '". Please try again.'
                 );
             }
 
             if (!$zip->close()) {
                 throw new \Exception(
-                    'Synchronization failure: Failed to close the zip "' .
+                    'BoxalinoLibraryError: Synchronization failure: Failed to close the zip "' .
                     $name . '". Please try again.'
                 );
             }
 
         } else {
             throw new \Exception(
-                'Synchronization failure: Failed to open the zip "' .
+                'BoxalinoLibraryError: Synchronization failure: Failed to open the zip "' .
                 $name . '" for writing. Please check the permissions and try again.'
             );
         }

@@ -55,6 +55,11 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      */
     protected $connection;
 
+    /**
+     * @var ComponentResource
+     */
+    protected $resource;
+
 
     /**
      * ExporterComponentAbstract constructor.
@@ -64,10 +69,12 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      * @param Configuration $exporterConfigurator
      */
     public function __construct(
+        ComponentResource $resource,
         Connection $connection,
         LoggerInterface $logger,
         Configuration $exporterConfigurator
     ){
+        $this->resource = $resource;
         $this->connection = $connection;
         $this->config = $exporterConfigurator;
         $this->logger = $logger;
@@ -149,7 +156,7 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      */
     protected function getColumnsByTableName(string $table) : array
     {
-        $columns = $this->connection->fetchColumn("DESCRIBE {$table}");
+        $columns = $this->resource->getColumnsByTableName($table);
         if(empty($columns))
         {
             throw new \Exception("BxIndexLog: {$table} does not exist.");
@@ -165,7 +172,7 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     protected function getTableContent(string $table) : array
     {
         try {
-            return $this->connection->fetchAll("SELECT * FROM {$table}");
+            return $this->resource->getTableContent($table);
         } catch(\Exception $exc)
         {
             $this->logger->warning("BxIndexLog: {$table} - additional table error: ". $exc->getMessage());
@@ -173,17 +180,13 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
         }
     }
 
+    /**
+     * @param array $tables
+     * @return mixed[]
+     */
     protected function getPropertiesByTableList(array $tables)
     {
-        $query = $this->connection->createQueryBuilder();
-        $query->select(['COLUMN_NAME', 'TABLE_NAME'])
-            ->from('information_schema.columns')
-            ->andWhere('information_schema.columns.TABLE_SCHEMA = :database')
-            ->andWhere('information_schema.columns.TABLE_NAME IN (:tables)')
-            ->setParameter("database", $this->connection->getDatabase(), ParameterType::STRING)
-            ->setParameter("tables", implode(",", $tables), ParameterType::STRING);
-
-        return $query->execute()->fetchAll();
+        return $this->resource->getPropertiesByTableList($tables);
     }
 
     /**
@@ -251,6 +254,14 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     }
 
     /**
+     * @return bool
+     */
+    public function getIsDelta() : bool
+    {
+        return $this->delta;
+    }
+
+    /**
      * Component name
      * Matches the entity name required by the library (customers, products, transactions)
      *
@@ -262,6 +273,8 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     }
 
     /**
+     * Component export main .csv file (ex: products.csv, customers.csv, transactions.csv)
+     *
      * @return string
      */
     public function getComponentMainFile()
@@ -269,6 +282,10 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
         return self::EXPORTER_COMPONENT_MAIN_FILE;
     }
 
+    /**
+     * ID field for the exported entity; required for the XML data configuration
+     * @return string
+     */
     public function getComponentIdField()
     {
         return self::EXPORTER_COMPONENT_ID_FIELD;

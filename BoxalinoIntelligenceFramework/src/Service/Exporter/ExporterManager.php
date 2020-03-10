@@ -2,7 +2,7 @@
 namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
-use Boxalino\IntelligenceFramework\Service\Exporter\Exporter;
+use Boxalino\IntelligenceFramework\Service\Exporter\ExporterService;
 use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use \Psr\Log\LoggerInterface;
 
@@ -46,7 +46,7 @@ abstract class ExporterManager
     protected $account = null;
 
     /**
-     * @var Exporter
+     * @var ExporterService
      */
     protected $exporterService;
 
@@ -55,7 +55,7 @@ abstract class ExporterManager
         LoggerInterface $logger,
         Configuration $exporterConfigurator,
         ExporterScheduler $scheduler,
-        Exporter $exporterService
+        ExporterService $exporterService
     ) {
         $this->config = $exporterConfigurator;
         $this->logger = $logger;
@@ -148,7 +148,7 @@ abstract class ExporterManager
      * @param string $account
      * @return string
      */
-    public function getLastExport(string $account) : string
+    public function getLastSuccessfulExport(string $account) : string
     {
         return $this->scheduler->getLastSuccessfulExportByTypeAccount($this->getType(), $account);
     }

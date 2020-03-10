@@ -26,37 +26,22 @@ class Order extends ExporterComponentAbstract
      */
     public function exportComponent()
     {
-        $attributes = $this->getFields();
-        $addressAttributes = $this->getAddressFields();
-        $properties = array_flip(array_merge($attributes, $addressAttributes));
-        $properties = [
-            'oli.id', 'oli.order_id', 'oli.identifier', 'oli.product_id', 'oli.label', 'oli.type', 'oli.quantity', 'oli.unit_price', 'oli.total_price', 'oli.stackable', 'oli.removable', 'oli.good', 'oli.position', 'oli.created_at AS order_item_created_at',
-            'o.auto_increment', 'o.order_number', 'o.billing_address_id', 'o.sales_channel_id', 'o.order_date_time', 'o.order_date', 'o.ammount_total AS total_order_value', 'o.ammount_net', 'o.tax_status', 'o.shipping_total as shipping_costs', 'o.affiliate_code', 'o.campaign_code', 'o.created_at',
-            'smso.technical_name AS order_state', 'smsd.technical_name AS shipping_state', 'smst.technical_name AS transaction_state','c.iso_code AS currency', 'locale.code as language',
-            'oc.email', 'oc. first_name', 'oc.last_name', 'oc.title', 'oc.company', 'oc.customer_number', 'oc.customer_id', 'oc.custom_fields AS customer_custom_fields',
-            'country.iso as country_iso', 'cst.name as state_name',
-            'oab.company AS billing_company', 'oab.title as billing_title', 'oab.first_name AS billing_first_name', 'oab.last_name AS billing_last_name', 'oab.street AS billing_street', 'oab.zipcode AS billing_zipcode', 'oab.city AS billing_city', 'oab.vat_id AS billing_vat_id', 'oab.phone_number AS billing_phone_nr',
-            'os.tracking_code AS shipping_tracking_code', 'os.shipping_date_earliest', 'os.shipping_date_last', 'os.shipping_costs',
-            'oas.company AS shipping_company', 'oas.title as shipping_title', 'oas.first_name AS shipping_first_name', 'oas.last_name AS shipping_last_name', 'oas.street AS shipping_street', 'oas.zipcode AS shipping_zipcode', 'oas.city AS shipping_city', 'oas.vat_id AS shipping_vat_id', 'oas.phone_number AS shipping_phone_nr',
-            'ot.ammount as transaction_ammount', 'ot.payment_method_id', 'pmt.name AS payment_name', '"" AS guest_id'
-        ];
-
+        $properties = $this->getFields();
         $orderStateMachineId = $this->getOrderStateMachineId();
         $orderDeliveryStateMachineId = $this->getOrderDeliveryStateMachineId();
         $orderTransactionStateMachineId = $this->getOrderTransactionStateMachineId();
-        $languageId = 2; #@TODO get default language ID
+        $defaultLanguageId = $this->config->getChannelDefaultLanguageId($this->getAccount());
         $header = true;
-        $data = [];
         $countMax = 10000000;
         $limit = 3000;
         $totalCount = 0;
-        $date = date("Y-m-d", strtotime("-1 month"));
-        $mode = $this->config->getTransactionMode($this->getAccount());
+        $isIncremental = $this->config->getExportTransactionIncremental($this->getAccount());
         $firstShop = true;
         foreach ($this->config->getAccountLanguages($this->getAccount()) as $languageId => $language) {
             $page = 1;
             while ($countMax > $totalCount + $limit)
             {
+                $data = [];
                 $query = $this->connection->createQueryBuilder();
                 $query->select($properties)
                     ->from("order_line_item", "oli")
@@ -82,8 +67,7 @@ class Order extends ExporterComponentAbstract
                         'order_address', 'country', 'country', 'order_address.country_id = country.id'
                     )
                     ->leftJoin(
-                        'order_address', 'country_state_translation', 'cst',
-                        'order_address.country_state_id = cst.country_state_id'
+                        'order_address', 'country_state_translation', 'cst', 'order_address.country_state_id = cst.country_state_id'
                     )
                     ->leftJoin(
                         'order', 'order_address', 'oab', 'order.billing_address_id = oab.id AND order.billing_address_version_id=oab.version_id'
@@ -104,7 +88,7 @@ class Order extends ExporterComponentAbstract
                         'order_transaction', 'state_machine_state', 'smst', "smst.id=order_transaction.state_id AND smst.state_machine_id = $orderTransactionStateMachineId"
                     )
                     ->leftJoin(
-                        'order_transaction', 'payment_method_transaction', 'pmt', "pmt.id=order_transaction.payment_method_id AND pmt.language_id = $languageId"
+                        'order_transaction', 'payment_method_transaction', 'pmt', "pmt.id=order_transaction.payment_method_id AND pmt.language_id = $defaultLanguageId"
                     )
                     ->andWhere("locale.code=:language")
                     ->andWhere("order.sales_channel_id=:channelId")
@@ -114,8 +98,8 @@ class Order extends ExporterComponentAbstract
                     ->setFirstResult(($page - 1) * $limit)
                     ->setMaxResults($limit);
 
-                if ($mode == 1) {
-                    $query->andWhere('order.order_time >= ?', $date);
+                if ($isIncremental == 1) {
+                    $query->andWhere('order.order_time >= ?', date("Y-m-d", strtotime("-1 month")));
                 }
 
                 $count = $query->execute()->rowCount();
@@ -142,16 +126,28 @@ class Order extends ExporterComponentAbstract
     }
 
 
+    /**
+     * @return false|mixed
+     * @throws \Doctrine\DBAL\DBALException
+     */
     protected function getOrderStateMachineId()
     {
         return $this->connection->fetchColumn("SELECT id FROM state_machine WHERE technical_name='order.state'");
     }
 
+    /**
+     * @return false|mixed
+     * @throws \Doctrine\DBAL\DBALException
+     */
     protected function getOrderDeliveryStateMachineId()
     {
         return $this->connection->fetchColumn("SELECT id FROM state_machine WHERE technical_name='order_delivery.state'");
     }
 
+    /**
+     * @return false|mixed
+     * @throws \Doctrine\DBAL\DBALException
+     */
     protected function getOrderTransactionStateMachineId()
     {
         return $this->connection->fetchColumn("SELECT id FROM state_machine WHERE technical_name='order_transaction.state'");
@@ -167,47 +163,7 @@ class Order extends ExporterComponentAbstract
     public function getFields() : array
     {
         $this->logger->info('BxIndexLog: get all transaction attributes for account: ' . $this->getAccount());
-
-        $attributeList = [];
-        $excludeFields = ['id', 'order_number'];
-        $attributes = $this->getPropertiesByTableList(['order', 'order_line_item']);
-        foreach ($attributes as $attribute)
-        {
-            if (in_array($attribute['COLUMN_NAME'], $excludeFields) && $attribute['TABLE_NAME'] == 's_order_details') {
-                continue;
-            }
-            $key = "{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}";
-            $attributeList[$key] = $attribute['COLUMN_NAME'];
-        }
-
-        return $this->config->getAccountTransactionsProperties($this->getAccount(), $attributeList, $this->getRequiredProperties());
-    }
-
-    /**
-     * Getting a list of transaction address fields and the table it comes from
-     * To be used in the general SQL select
-     *
-     * @return array
-     */
-    public function getAddressFields()
-    {
-        $addressAttributes = [];
-        $attributes = $this->getPropertiesByTableList(['order_address', 'order_delivery']);
-        $excludeFields = ['id', 'version_id', 'order_version_id', 'order_id', 'order_version_id','created_at', 'updated_at'];
-        $commonFields = ['custom_fields'];
-        foreach ($attributes as $attribute) {
-            if(in_array($attribute['COLUMN_NAME'], $excludeFields) && $attribute['TABLE_NAME'] == 'order_address'){
-                continue;
-            }
-
-            $key = "{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}";
-            $addressAttributes[$key] = "shipping_" . $attribute['COLUMN_NAME'];
-            if($attribute['TABLE_NAME'] == 'order_address'){
-                $addressAttributes[$key] = "billing_" . $attribute['COLUMN_NAME'];
-            }
-        }
-
-        return $addressAttributes;
+        return $this->config->getAccountTransactionsProperties($this->getAccount(), $this->getRequiredProperties(), []);
     }
 
 
@@ -217,7 +173,15 @@ class Order extends ExporterComponentAbstract
     public function getRequiredProperties() : array
     {
         return [
-            'id','order_number','price','order_date_time','ammount_total','tax_status', 'state'
+            'LOWER(HEX(oli.id)) AS order_line_item_id', 'LOWER(HEX(oli.order_id)) AS id', 'oli.identifier', 'LOWER(HEX(oli.product_id))', 'oli.label', 'oli.type', 'oli.quantity', 'oli.unit_price', 'oli.total_price', 'oli.stackable', 'oli.removable', 'oli.good', 'oli.position', 'oli.created_at AS order_item_created_at',
+            'o.auto_increment', 'o.order_number', 'LOWER(HEX(o.billing_address_id))', 'LOWER(HEX(o.sales_channel_id))', 'o.order_date_time', 'o.order_date', 'o.ammount_total AS total_order_value', 'o.ammount_net', 'o.tax_status', 'o.shipping_total as shipping_costs', 'o.affiliate_code', 'o.campaign_code', 'o.created_at',
+            'smso.technical_name AS order_state', 'smsd.technical_name AS shipping_state', 'smst.technical_name AS transaction_state','c.iso_code AS currency', 'locale.code as language',
+            'oc.email', 'oc. first_name', 'oc.last_name', 'oc.title', 'oc.company', 'oc.customer_number', 'LOWER(HEX(oc.customer_id))', 'oc.custom_fields AS customer_custom_fields',
+            'country.iso as country_iso', 'cst.name as state_name',
+            'oab.company AS billing_company', 'oab.title as billing_title', 'oab.first_name AS billing_first_name', 'oab.last_name AS billing_last_name', 'oab.street AS billing_street', 'oab.zipcode AS billing_zipcode', 'oab.city AS billing_city', 'oab.vat_id AS billing_vat_id', 'oab.phone_number AS billing_phone_nr',
+            'od.tracking_codes AS shipping_tracking_codes', 'od.shipping_date_earliest', 'od.shipping_date_last', 'od.shipping_costs',
+            'oas.company AS shipping_company', 'oas.title as shipping_title', 'oas.first_name AS shipping_first_name', 'oas.last_name AS shipping_last_name', 'oas.street AS shipping_street', 'oas.zipcode AS shipping_zipcode', 'oas.city AS shipping_city', 'oas.vat_id AS shipping_vat_id', 'oas.phone_number AS shipping_phone_nr',
+            'ot.ammount as transaction_ammount', 'ot.payment_method_id', 'pmt.name AS payment_name', '"" AS guest_id'
         ];
     }
 
