@@ -1,7 +1,6 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
-use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Psr\Log\LoggerInterface;
