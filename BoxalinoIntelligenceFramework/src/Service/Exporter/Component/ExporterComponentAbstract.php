@@ -1,14 +1,16 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
-
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\ParameterType;
 use \Psr\Log\LoggerInterface;
 
+/**
+ * Class ExporterComponentAbstract
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Component
+ */
 abstract class ExporterComponentAbstract implements ExporterComponentInterface
 {
     CONST EXPORTER_COMPONENT_ID_FIELD = "";

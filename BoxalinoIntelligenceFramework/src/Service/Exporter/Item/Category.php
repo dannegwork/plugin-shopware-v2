@@ -1,8 +1,16 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+/**
+ * Class Category
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Category extends ItemsAbstract
 {
+
+    CONST EXPORTER_COMPONENT_MAIN_FILE = 'categories.csv';
+    CONST EXPORTER_COMPONENT_RELATION_FILE = 'product-categories.csv';
+
     public function export()
     {
         // TODO: Implement export() method.
@@ -10,20 +18,16 @@ class Category extends ItemsAbstract
 
     /**
      * Export item categories
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
      */
     public function exportItemCategories()
     {
-        $db = $this->db;
-        $account = $this->getAccount();
         $files = $this->getFiles();
-        $categories = array();
+        $categories = [];
         $header = true;
-        $languages = $this->_config->getAccountLanguages($account);
+        $languages = $this->config->getAccountLanguages($this->getAccount());
         $select = $db->select()->from(array('c' => 's_categories'), array('id', 'parent', 'description', 'path'));
         $stmt = $db->query($select);
-        $this->log->info("BxIndexLog: Preparing products - start categories.");
+        $this->logger->info("BxIndexLog: Preparing products - start categories.");
         if($stmt->rowCount()) {
             while($r = $stmt->fetch()){
                 $value = $r['description'];
@@ -41,17 +45,19 @@ class Category extends ItemsAbstract
                 $categories[$r['id']] = $category;
             }
         }
-        $this->log->info("BxIndexLog: Preparing products - end categories.");
+        $this->logger->info("BxIndexLog: Preparing products - end categories.");
         $files->savePartToCsv('categories.csv', $categories);
         $categories = null;
-        $this->bxData->addCategoryFile($files->getPath('categories.csv'), 'category_id', 'parent_id', $language_headers);
+        $this->getLibrary()->addCategoryFile($files->getPath('categories.csv'), 'category_id', 'parent_id', $language_headers);
+
+
         $language_headers = null;
         $data = array();
         $doneCases = array();
         $header = true;
-        $categoryShopIds = $this->_config->getShopCategoryIds($account);
+        $categoryShopIds = $this->config->getShopCategoryIds($this->getAccount());
 
-        $this->log->info("BxIndexLog: Preparing products - start product categories.");
+        $this->logger->info("BxIndexLog: Preparing products - start product categories.");
         foreach ($languages as $shop_id => $language) {
             $category_id = $categoryShopIds[$shop_id];
             $sql = $db->select()
@@ -94,10 +100,49 @@ class Category extends ItemsAbstract
             }
         }
 
-        $this->log->info("BxIndexLog: Preparing products - end product categories.");
+        $this->logger->info("BxIndexLog: Preparing products - end product categories.");
         $doneCases = null;
-        $productToCategoriesSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_categories.csv'), 'id');
-        $this->bxData->setCategoryField($productToCategoriesSourceKey, 'categoryID');
+        $productToCategoriesSourceKey = $this->getLibrary()->addCSVItemFile($files->getPath('product_categories.csv'), 'id');
+        $this->getLibrary()->setCategoryField($productToCategoriesSourceKey, 'categoryID');
+    }
+
+
+    public function getTranslation()
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select([
+
+        ])
+            ->from('category_translation')
+            ->leftJoin('category_translation', 'language', '');
+    }
+
+    public function getLanguageHeaders()
+    {
+        $languages = $this->config->getAccountLanguages($this->getAccount());
+        $headers = [];
+        foreach($languages as $language)
+        {
+            $headers[] = 'value_' . $language;
+        }
+
+        return $headers;
+    }
+
+    public function exportItemRelation()
+    {
+
+    }
+
+    public function getRequiredFields(): array
+    {
+        return [
+            'LOWER(HEX(category.id)) AS id', 'category.auto_increment', 'LOWER(HEX(category.parent_id)) as parent_id',
+            'LOWER(HEX(category.media_id)) AS media_id', 'LOWER(HEX(category.cms_page_id)) AS cms_page_id',
+            'LOWER(HEX(category.after_category_id)) AS after_category_id', 'category.level', 'category.active', 'category.child_count',
+            'category.display_nested_products', 'category.visible', 'category.type', 'category.created_at', 'category.updated_at',
+            'category.'
+        ];
     }
 
 }
