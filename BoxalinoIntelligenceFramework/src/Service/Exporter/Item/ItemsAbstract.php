@@ -116,6 +116,13 @@ abstract class ItemsAbstract implements ExporterInterface
         return $this->library;
     }
 
+    /**
+     * @return array
+     */
+    public function getExportedProductIds() : array
+    {
+        return $this->exportedProductIds;
+    }
 
     /**
      * @param array $ids

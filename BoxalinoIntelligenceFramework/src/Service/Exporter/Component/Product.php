@@ -21,7 +21,12 @@ use Psr\Log\LoggerInterface;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 
-
+/**
+ * Class Product
+ * Product component exporting logic
+ *
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Component
+ */
 class Product extends ExporterComponentAbstract
 {
 
@@ -80,7 +85,7 @@ class Product extends ExporterComponentAbstract
     protected $urlExporter;
 
     /**
-     * @var Review 
+     * @var Review
      */
     protected $reviewsExporter;
 

@@ -44,9 +44,9 @@ class Order extends ExporterComponentAbstract
                 $data = [];
                 $query = $this->connection->createQueryBuilder();
                 $query->select($properties)
-                    ->from("order_line_item", "oli")
+                    ->from("order_line_item", "order_line_item")
                     ->leftJoin(
-                        'order_line_item', 'order', 'o', 'o.id=oli.order_id AND o.version_id=oli.order_version_id'
+                        'order_line_item', 'order', 'o', 'order.id=order_line_item.order_id AND order.version_id=order_line_item.order_version_id'
                     )
                     ->leftJoin(
                         'order', 'state_machine_state', 'smso', "smso.id=order.state_id AND smso.state_machine_id = $orderStateMachineId"
@@ -173,14 +173,24 @@ class Order extends ExporterComponentAbstract
     public function getRequiredProperties() : array
     {
         return [
-            'LOWER(HEX(oli.id)) AS order_line_item_id', 'LOWER(HEX(oli.order_id)) AS id', 'oli.identifier', 'LOWER(HEX(oli.product_id))', 'oli.label', 'oli.type', 'oli.quantity', 'oli.unit_price', 'oli.total_price', 'oli.stackable', 'oli.removable', 'oli.good', 'oli.position', 'oli.created_at AS order_item_created_at',
-            'o.auto_increment', 'o.order_number', 'LOWER(HEX(o.billing_address_id))', 'LOWER(HEX(o.sales_channel_id))', 'o.order_date_time', 'o.order_date', 'o.ammount_total AS total_order_value', 'o.ammount_net', 'o.tax_status', 'o.shipping_total as shipping_costs', 'o.affiliate_code', 'o.campaign_code', 'o.created_at',
+            'LOWER(HEX(order_line_item.id)) AS order_line_item_id', 'LOWER(HEX(order_line_item.order_id)) AS id',
+            'order_line_item.identifier', 'LOWER(HEX(order_line_item.product_id))', 'order_line_item.label',
+            'order_line_item.type', 'order_line_item.quantity', 'order_line_item.unit_price', 'order_line_item.total_price',
+            'order_line_item.stackable', 'order_line_item.removable', 'order_line_item.good', 'order_line_item.position',
+            'order_line_item.created_at AS order_item_created_at',
+            'order.auto_increment', 'order.order_number', 'LOWER(HEX(order.billing_address_id))', 'LOWER(HEX(order.sales_channel_id))',
+            'order.order_date_time', 'order.order_date', 'order.ammount_total AS total_order_value', 'order.ammount_net',
+            'order.tax_status', 'order.shipping_total as shipping_costs', 'order.affiliate_code', 'order.campaign_code', 'order.created_at',
             'smso.technical_name AS order_state', 'smsd.technical_name AS shipping_state', 'smst.technical_name AS transaction_state','c.iso_code AS currency', 'locale.code as language',
             'oc.email', 'oc. first_name', 'oc.last_name', 'oc.title', 'oc.company', 'oc.customer_number', 'LOWER(HEX(oc.customer_id))', 'oc.custom_fields AS customer_custom_fields',
             'country.iso as country_iso', 'cst.name as state_name',
-            'oab.company AS billing_company', 'oab.title as billing_title', 'oab.first_name AS billing_first_name', 'oab.last_name AS billing_last_name', 'oab.street AS billing_street', 'oab.zipcode AS billing_zipcode', 'oab.city AS billing_city', 'oab.vat_id AS billing_vat_id', 'oab.phone_number AS billing_phone_nr',
+            'oab.company AS billing_company', 'oab.title as billing_title', 'oab.first_name AS billing_first_name',
+            'oab.last_name AS billing_last_name', 'oab.street AS billing_street', 'oab.zipcode AS billing_zipcode',
+            'oab.city AS billing_city', 'oab.vat_id AS billing_vat_id', 'oab.phone_number AS billing_phone_nr',
             'od.tracking_codes AS shipping_tracking_codes', 'od.shipping_date_earliest', 'od.shipping_date_last', 'od.shipping_costs',
-            'oas.company AS shipping_company', 'oas.title as shipping_title', 'oas.first_name AS shipping_first_name', 'oas.last_name AS shipping_last_name', 'oas.street AS shipping_street', 'oas.zipcode AS shipping_zipcode', 'oas.city AS shipping_city', 'oas.vat_id AS shipping_vat_id', 'oas.phone_number AS shipping_phone_nr',
+            'oas.company AS shipping_company', 'oas.title as shipping_title', 'oas.first_name AS shipping_first_name',
+            'oas.last_name AS shipping_last_name', 'oas.street AS shipping_street', 'oas.zipcode AS shipping_zipcode',
+            'oas.city AS shipping_city', 'oas.vat_id AS shipping_vat_id', 'oas.phone_number AS shipping_phone_nr',
             'ot.ammount as transaction_ammount', 'ot.payment_method_id', 'pmt.name AS payment_name', '"" AS guest_id'
         ];
     }

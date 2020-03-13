@@ -3,6 +3,12 @@ namespace Boxalino\IntelligenceFramework\Service\Exporter\Component;
 
 use Doctrine\DBAL\ParameterType;
 
+/**
+ * Class Customer
+ * Customer component exporting logic
+ *
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Component
+ */
 class Customer extends ExporterComponentAbstract
 {
 
@@ -136,7 +142,7 @@ class Customer extends ExporterComponentAbstract
 
     /**
      * Getting the customer attributes list
-     * @return []
+     * @return array
      * @throws \Exception
      */
     public function getFields() : array
