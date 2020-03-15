@@ -1,131 +1,124 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Doctrine\DBAL\Query\QueryBuilder;
+use Shopware\Core\Defaults;
+use Shopware\Core\Framework\Uuid\Uuid;
+
+/**
+ * Class Url
+ * @TODO add storefront URL based on host/shop domain
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Url extends ItemsAbstract
 {
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "seo_url";
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'product_seo_url.csv';
+
 
     public function export()
     {
-        // TODO: Implement export() method.
+        $this->logger->info("BxIndexLog: Preparing products - START URL EXPORT.");
+        $totalCount = 0; $page = 1; $data=[]; $header = true; $success = true;
+        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP) {
+            $query = $this->connection->createQueryBuilder();
+            $query->select($this->getRequiredFields())
+                ->from('product')
+                ->leftJoin('product', '( ' . $this->getLocalizedFieldsQuery()->__toString() . ') ',
+                    'seo_url', 'seo_url.foreign_key = product.id')
+                ->andWhere('product.version_id = :live')
+                ->andWhere('seo_url.sales_channel_id = :channel')
+                ->addGroupBy('product.id')
+                ->setParameter("channel", Uuid::fromHexToBytes($this->getChannelId()))
+                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION))
+                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+                ->setMaxResults(Product::EXPORTER_STEP);
+
+            $count = $query->execute()->rowCount();
+            $totalCount += $count;
+            if ($totalCount == 0) {
+                if($page==1) {
+                    $success = false;
+                }
+                break;
+            }
+            $data = $query->execute()->fetchAll();
+            if (count($data) > 0 && $header) {
+                $header = false;
+                $data = array_merge(array(array_keys(end($data))), $data);
+            }
+
+            foreach (array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment) {
+                $this->getFiles()->savePartToCsv($this->getItemMainFile(), $dataSegment);
+                $dataSegment = [];
+            }
+
+            $data = [];
+            $page++;
+            if ($totalCount < Product::EXPORTER_STEP - 1) {
+                break;
+            }
+        }
+
+        if($success)
+        {
+            $sourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemMainFile()), 'product_id');
+            $this->getLibrary()->addSourceLocalizedTextField($sourceKey, 'seo_url', $this->getLanguageHeaders());
+        }
     }
 
     /**
-     * Export product URL
-     * Create url.csv and products_url.csv
-     *
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
+     * Prepare seo url joins
+     * @return \Doctrine\DBAL\Query\QueryBuilder
+     * @throws \Exception
      */
-    public function exportItemUrls()
+    protected function getLocalizedFieldsQuery() : QueryBuilder
     {
-        $db = $this->db;
-        $account = $this->getAccount();
-        $files = $this->getFiles();
-        $main_shopId = $this->_config->getAccountStoreId($account);
-        $repository = Shopware()->Container()->get('models')->getRepository('Shopware\Models\Shop\Shop');
-        $shop = $repository->getActiveById($main_shopId);
-        $defaultPath = 'http://'. $shop->getHost() . $shop->getBasePath() . '/';
-        $languages = $this->_config->getAccountLanguages($account);
-        $lang_header = array();
-        $lang_productPath = array();
-        $data = array();
-        foreach ($languages as $shopId => $language) {
-            $lang_header[$language] = "value_$language";
-            $shop = $repository->getActiveById($shopId);
-            $productPath = 'http://' . $shop->getHost() . $shop->getBasePath()  . $shop->getBaseUrl() . '/' ;
-            $lang_productPath[$language] = $productPath;
-            $shop = null;
+        $languages = $this->config->getAccountLanguages($this->getAccount());
+        $defaultLanguage = $this->config->getChannelDefaultLanguageId($this->getAccount());
+        $alias = []; $innerConditions = []; $leftConditions = []; $mainTable = 'seo_url';
+        $groupByFields = ['seo_url.foreign_key', 'seo_url.sales_channel_id'];
+        $selectFields = ['seo_url.sales_channel_id', 'seo_url.foreign_key'];
+        foreach($languages as $languageId=>$languageCode)
+        {
+            $alias[$languageCode] = "seo_url_" . $languageCode;
+            $selectFields[] = "IF(IS_NULL($alias.seo_path_info), $mainTable.seo_path_info, $alias.seo_path_info) as value_$languageCode";
+            $innerConditions[$languageCode] = [
+                "$mainTable.id = $alias.id",
+                "$mainTable.foreign_key = $alias.foreign_key",
+                "$mainTable.language_id = $defaultLanguage"
+            ];
 
-            $sql = $db->select()
-                ->from(array('r_u' => 's_core_rewrite_urls'),
-                    array('subshopID', 'path', 'org_path', 'main',
-                        new Zend_Db_Expr("SUBSTR(org_path, LOCATE('sArticle=', org_path) + CHAR_LENGTH('sArticle=')) as articleID")
-                    )
-                )
-                ->where("r_u.subshopID = {$shopId} OR r_u.subshopID = ?", $main_shopId)
-                ->where("r_u.main = ?", 1)
-                ->where("org_path like '%sArticle%'");
-            if ($this->delta) {
-                $sql->having('articleID IN(?)', $this->deltaIds);
-            }
+            $leftConditions[$languageCode] = [
+                "$mainTable.id = $alias.id",
+                "$mainTable.foreign_key = $alias.foreign_key",
+                "$mainTable.language_id = $languageId"
+            ];
+        }
 
-            $stmt = $db->query($sql);
-            if ($stmt->rowCount()) {
-                while ($row = $stmt->fetch()) {
-                    $basePath = $row['subshopID'] == $shopId ? $productPath : $defaultPath;
-                    if (isset($data[$row['articleID']])) {
-                        if (isset($data[$row['articleID']]['value_' . $language])) {
-                            if ($data[$row['articleID']]['subshopID'] < $row['subshopID']) {
-                                $data[$row['articleID']]['value_' . $language] = $basePath . $row['path'];
-                                $data[$row['articleID']]['subshopID'] = $row['subshopID'];
-                            }
-                        } else {
-                            $data[$row['articleID']]['value_' . $language] = $basePath . $row['path'];
-                            $data[$row['articleID']]['subshopID'] = $row['subshopID'];
-                        }
-                        continue;
-                    }
-                    $data[$row['articleID']] = array(
-                        'articleID' => $row['articleID'],
-                        'subshopID' => $row['subshopID'],
-                        'value_' . $language => $basePath . $row['path']
-                    );
-                }
-            }
+        $query = $this->connection->createQueryBuilder();
+        $query->select($selectFields)
+            ->from($mainTable);
+
+        foreach($languages as $languageId=>$languageCode)
+        {
+            $query->innerJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $innerConditions[$languageCode]))
+                ->leftJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $leftConditions[$languageCode]));
         }
-        $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
-            ->join(
-                array('d' => 's_articles_details'),
-                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
-                $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('id', 'articleID')
-            );
-        if ($this->delta) {
-            $sql->where('a.id IN(?)', $this->deltaIds);
-        }
-        $stmt = $db->query($sql);
-        if ($stmt->rowCount()) {
-            while ($row = $stmt->fetch()) {
-                if(!isset($data[$row['articleID']])){
-                    $articleID = $row['articleID'];
-                    $item = ["articleID" => $articleID, "subshopID" => null];
-                    foreach ($lang_productPath as $language => $path) {
-                        $item["value_{$language}"] = "{$path}detail/index/sArticle/{$articleID}";
-                    }
-                    $data[$row['articleID']] = $item;
-                }
-            }
-        }
-        if (count($data) > 0) {
-            $data = array_merge(array(array_merge(array('articleID', 'subshopID'), $lang_header)), $data);
-        } else {
-            $data = (array(array_merge(array('articleID', 'subshopID'), $lang_header)));
-        }
-        $files->savepartToCsv('url.csv', $data);
-        $referenceKey = $this->bxData->addResourceFile($files->getPath('url.csv'), 'articleID', $lang_header);
-        $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
-            ->join(
-                array('d' => 's_articles_details'),
-                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
-                $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('id', 'articleID')
-            );
-        if ($this->delta) {
-            $sql->where('a.id IN(?)', $this->deltaIds);
-        }
-        $stmt = $db->query($sql);
-        if ($stmt->rowCount()) {
-            while ($row = $stmt->fetch()) {
-                $data[$row['id']] = array('id' => $row['id'], 'articleID' => $row['articleID']);
-            }
-        }
-        $data = array_merge(array(array_keys(end($data))), $data);
-        $files->savepartToCsv('products_url.csv', $data);
-        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('products_url.csv'), 'id');
-        $this->bxData->addSourceLocalizedTextField($attributeSourceKey, "url", "articleID", $referenceKey);
+
+        $query->groupBy($groupByFields);
+        return $query;
     }
 
-
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function getRequiredFields(): array
+    {
+        $translationFields = preg_filter('/^/', 'seo_url.', $this->getLanguageHeaders());
+        return array_merge($translationFields, ['LOWER(HEX(product.id)) AS product_id']
+        );
+    }
 }

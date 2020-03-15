@@ -1,53 +1,115 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Doctrine\DBAL\ParameterType;
+use Shopware\Core\Defaults;
+use Doctrine\DBAL\Query\QueryBuilder;
+use Shopware\Core\Framework\Uuid\Uuid;
+
 class Manufacturer extends ItemsAbstract
 {
 
-    /**
-     * Export item brands/suppliers
-     * Create file product_brands.csv
-     *
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     */
-    public function exportItemBrands()
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "brand";
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'brand.csv';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_brand.csv';
+
+    public function export()
     {
-        $db = $this->db;
-        $files = $this->getFiles();
-        $data = array();
-        $header = true;
-        $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
-            ->join(
-                array('d' => 's_articles_details'),
-                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
-                $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('id')
-            )
-            ->join(
-                array('asup' => 's_articles_supplier'),
-                $this->qi('asup.id') . ' = ' . $this->qi('a.supplierID'),
-                array('brand' => 'name')
-            );
-        if ($this->delta) {
-            $sql->where('a.id IN(?)', $this->deltaIds);
+        $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER EXPORT.");
+        $fields = array_merge($this->getLanguageHeaders(), ['manufacturer.product_manufacturer_id']);
+
+        $query = $this->connection->createQueryBuilder();
+        $query->select($fields)
+            ->from('( '. $this->getLocalizedFieldsQuery()->__toString().')', 'manufacturer')
+            ->andWhere('manufacturer.product_manufacturer_version_id = :live')
+            ->addGroupBy('manufacturer.product_manufacturer_id')
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY);
+
+        $count = $query->execute()->rowCount();
+        if ($count == 0) {
+            return;
         }
-        $stmt = $db->query($sql);
-        while ($row = $stmt->fetch()) {
-            if(!isset($this->shopProductIds[$row['id']])) {
-                continue;
-            }
-            if($header) {
-                $data[] = array_keys($row);
-                $header = false;
-            }
-            $row['brand'] = trim($row['brand']);
-            $data[] = $row;
+        $data = $query->execute()->fetchAll();
+        if (count($data) > 0) {
+            $data = array_merge(array(array_keys(end($data))), $data);
         }
-        $files->savepartToCsv('product_brands.csv', $data);
-        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_brands.csv'), 'id');
-        $this->bxData->addSourceStringField($attributeSourceKey, "brand", "brand");
+        $this->getFiles()->savePartToCsv($this->getItemMainFile(), $dataSegment);
+
+        $this->exportItemRelation();
+        $this->logger->info("BxIndexLog: Preparing products - END MANUFACTURER.");
     }
 
+    public function exportItemRelation()
+    {
+        $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER RELATIONS EXPORT.");
+        $totalCount = 0; $page = 1; $header = true; $success = true;
+        $rootCategoryId = $this->config->getChannelRootCategoryId($this->getAccount());
+        $defaultLanguageId = $this->config->getChannelDefaultLanguageId($this->getAccount());
+
+        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
+        {
+            $query = $this->connection->createQueryBuilder();
+            $query->select($this->getRequiredFields())
+                ->from('product', 'p')
+                ->andWhere('p.version_id = :live')
+                ->andWhere('p.product_manufacturer_version_id = :live')
+                ->andWhere("JSON_SEARCH(p.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
+                ->addGroupBy('p.product_id')
+                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+                ->setParameter('channelRootCategoryId', $rootCategoryId, ParameterType::STRING)
+                ->setParameter('defaultLanguage', Uuid::fromHexToBytes($defaultLanguageId), ParameterType::BINARY)
+                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+                ->setMaxResults(Product::EXPORTER_STEP);
+
+            $count = $query->execute()->rowCount();
+            $totalCount += $count;
+            if ($totalCount == 0) {
+                if($page==1) {
+                    $success = false;
+                }
+                break;
+            }
+            $data = $query->execute()->fetchAll();
+            if (count($data) > 0 && $header) {
+                $header = false;
+                $data = array_merge(array(array_keys(end($data))), $data);
+            }
+            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
+            {
+                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
+            }
+
+            $data = []; $page++;
+            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
+        }
+
+        if($success)
+        {
+            $optionSourceKey = $this->getLibrary()->addResourceFile($this->getFiles()->getPath($this->getItemMainFile()),
+                'product_manufacturer_id', $this->getLanguageHeaders());
+            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+            $this->getLibrary()->addSourceLocalizedTextField($attributeSourceKey, $this->getPropertyName(),'product_manufacturer_id', $optionSourceKey);
+        }
+    }
+
+    /**
+     * @return QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
+    public function getLocalizedFieldsQuery()
+    {
+        return $this->getLocalizedFields("product_manufacturer_translation", 'product_manufacturer_id',
+            'product_manufacturer_id', 'product_manufacturer_version_id', 'name',
+            ['product_manufacturer_translation.product_manufacturer_id', 'product_manufacturer_translation.product_manufacturer_version_id']
+        );
+    }
+
+    /**
+     * @return array
+     */
+    public function getRequiredFields(): array
+    {
+        return ['p.id AS product_id', 'p.product_manufacturer_id'];
+    }
 }

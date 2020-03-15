@@ -1,87 +1,79 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
-use Boxalino\IntelligenceFramework\Service\Exporter\ExporterInterface;
+use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Doctrine\DBAL\ParameterType;
+use Shopware\Core\Defaults;
+use Doctrine\DBAL\Query\QueryBuilder;
+use Shopware\Core\Framework\Uuid\Uuid;
 
+/**
+ * Class Review
+ * Exports product votes (average)
+ *
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Review extends ItemsAbstract
 {
 
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "vote";
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'votes.csv';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_votes.csv';
+
     public function export()
     {
-        // TODO: Implement export() method.
+        $this->logger->info("BxIndexLog: Preparing products - START REVIEWS EXPORT.");
+        $totalCount = 0; $page = 1; $header = true; $success = true;
+        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
+        {
+            $query = $this->connection->createQueryBuilder();
+            $query->select($this->getRequiredFields())
+                ->from("product_review")
+                ->andWhere('product_review.product_version_id = :live')
+                ->andWhere('product_review.sales_channel_id = :channel')
+                ->andWhere('product_review.status = 1')
+                ->addGroupBy('product_review.product_id')
+                ->setParameter("channel", Uuid::fromHexToBytes($this->getChannelId()), ParameterType::BINARY)
+                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+                ->setMaxResults(Product::EXPORTER_STEP);
+
+            $count = $query->execute()->rowCount();
+            $totalCount += $count;
+            if ($totalCount == 0) {
+                if($page==1){
+                    $success = false;
+                }
+                break;
+            }
+            $data = $query->execute()->fetchAll();
+            if (count($data) > 0 && $header) {
+                $header = false;
+                $data = array_merge(array(array_keys(end($data))), $data);
+            }
+            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
+            {
+                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
+            }
+
+            $data = []; $page++;
+            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
+        }
+
+        if($success)
+        {
+            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+            $this->getLibrary()->addSourceNumberField($attributeSourceKey, $this->getPropertyName(), 'value');
+        }
+
+        $this->logger->info("BxIndexLog: Preparing products - END REVIEWS.");
     }
 
     /**
-     * Export item votes to vote.csv and product_vote.csv
-     *
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
+     * @return array
      */
-    public function exportItemVotes()
+    public function getRequiredFields(): array
     {
-        $files = $this->getFiles();
-        $db = $this->db;
-        $data = array();
-        $header = true;
-        $sql = $db->select()
-            ->from(array('a' => 's_articles_vote'),
-                array('average' => new Zend_Db_Expr("SUM(a.points) / COUNT(a.id)"), 'articleID'))
-            ->where('a.active = 1')
-            ->group('a.articleID');
-        if ($this->delta) {
-            $sql->where('a.articleID IN(?)', $this->deltaIds);
-        }
-        $stmt = $db->query($sql);
-        while ($row = $stmt->fetch()) {
-            if ($header) {
-                $data[] = array_keys($row);
-                $header = false;
-            }
-            if(sizeof($data) > 1000) {
-                $files->savepartToCsv('vote.csv', $data);
-                $data = [];
-            }
-            $data[] = $row;
-        }
-        if($header) {
-            $data[] = array('average', 'articleID');
-        }
-        $files->savepartToCsv('vote.csv', $data);
-        $referenceKey = $this->bxData->addResourceFile($files->getPath('vote.csv'), 'articleID', ['average']);
-
-        $data = array();
-        $header = true;
-        $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
-            ->join(
-                array('d' => 's_articles_details'),
-                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
-                $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('id', 'articleID')
-            );
-        if ($this->delta) {
-            $sql->where('a.id IN(?)', $this->deltaIds);
-        }
-        $stmt = $db->query($sql);
-        if ($stmt->rowCount()) {
-            while ($row = $stmt->fetch()) {
-                if(!isset($this->shopProductIds[$row['id']])) {
-                    continue;
-                }
-                if ($header) {
-                    $data[] = array_keys($row);
-                    $header = false;
-                }
-                $data[$row['id']] = array('id' => $row['id'], 'articleID' => $row['articleID']);
-                if(sizeof($data) > 1000) {
-                    $files->savepartToCsv('product_vote.csv', $data);
-                    $data = array();
-                }
-            }
-        }
-        $files->savepartToCsv('product_vote.csv', $data);
-        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_vote.csv'), 'id');
-        $this->bxData->addSourceNumberField($attributeSourceKey, "vote", "articleID", $referenceKey);
+        return ['AVG(product_review.points) AS value', 'product_review.product_id AS product_id'];
     }
-
 }

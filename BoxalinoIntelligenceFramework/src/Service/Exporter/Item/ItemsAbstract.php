@@ -7,10 +7,17 @@ use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Query\QueryBuilder;
+use http\Exception\BadQueryStringException;
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Defaults;
+use Shopware\Core\Framework\Uuid\Uuid;
 
 abstract class ItemsAbstract implements ExporterInterface
 {
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "";
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = '';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = '';
 
     /**
      * @var FileHandler
@@ -58,10 +65,111 @@ abstract class ItemsAbstract implements ExporterInterface
     }
 
 
-    abstract function export();
-    abstract function getRequiredFields() : array;
+    abstract public function export();
+    abstract public function getRequiredFields() : array;
 
 
+    /**
+     * @param $property
+     * @return string
+     */
+    public function getFileNameByProperty($property)
+    {
+        return "product_$property.csv";
+    }
+
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function getLanguageHeaders() : array
+    {
+        return preg_filter('/^/', 'value_',$this->config->getAccountLanguages($this->getAccount()));
+    }
+
+    /**
+     * JOIN logic to access diverse localized fields/items values
+     * If there is no translation available, the default one is used
+     *
+     * @param string $mainTable
+     * @param string $mainTableIdField
+     * @param string $idField
+     * @param string $versionIdField
+     * @param string $localizedFieldName
+     * @param array $selectFields
+     * @return \Doctrine\DBAL\Query\QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     * @throws \Exception
+     */
+    public function getLocalizedFields(string $mainTable, string $mainTableIdField, string $idField,
+                                       string $versionIdField, string $localizedFieldName, array $groupByFields) : QueryBuilder
+    {
+        $languages = $this->config->getAccountLanguages($this->getAccount());
+        $defaultLanguage = $this->config->getChannelDefaultLanguageId($this->getAccount());
+        $alias = []; $innerConditions = []; $leftConditions = []; $selectFields = $groupByFields;
+        foreach($languages as $languageId=>$languageCode)
+        {
+            $alias[$languageCode] = $mainTable . "_" . $languageCode;
+            $selectFields[] = "IF(IS_NULL($alias.$localizedFieldName), $mainTable.$localizedFieldName, $alias.$localizedFieldName) as value_$languageCode";
+            $innerConditions[$languageCode] = [
+                "$mainTable.$mainTableIdField = $alias.$idField",
+                "$mainTable.$versionIdField =  $alias.$versionIdField",
+                "$mainTable.language_id = $defaultLanguage"
+            ];
+
+            $leftConditions[$languageCode] = [
+                "$mainTable.$mainTableIdField = $alias.$idField",
+                "$mainTable.$versionIdField = $alias.$versionIdField",
+                "$mainTable.language_id = $languageId"
+            ];
+        }
+
+        $query = $this->connection->createQueryBuilder();
+        $query->select($selectFields)
+            ->from($mainTable);
+
+        foreach($languages as $languageId=>$languageCode)
+        {
+            $query->innerJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $innerConditions[$languageCode]))
+                ->leftJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $leftConditions[$languageCode]));
+        }
+
+        $query->groupBy($groupByFields);
+        return $query;
+    }
+
+    /**
+     * @return string
+     */
+    public function getItemMainFile()
+    {
+        return self::EXPORTER_COMPONENT_ITEM_MAIN_FILE;
+    }
+
+    /**
+     * @return string
+     */
+    public function getItemRelationFile()
+    {
+        return self::EXPORTER_COMPONENT_ITEM_RELATION_FILE;
+    }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getChannelId() : string
+    {
+        return $this->config->getAccountChannelId($this->getAccount());
+    }
+
+    /**
+     * @return string
+     */
+    public function getPropertyName() : string
+    {
+        return self::EXPORTER_COMPONENT_ITEM_NAME;
+    }
     /**
      * @return string
      */

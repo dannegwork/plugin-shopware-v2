@@ -107,7 +107,7 @@ class Customer extends ExporterComponentAbstract
                     ->andWhere("customer.language_id=:languageId")
                     ->andWhere("sales_channel.id=:channelId")
                     ->groupBy('customer.id')
-                    ->setParameter('channelId', $this->config->getAccountChannelId($this->getAccount()), ParameterType::BINARY)
+                    ->setParameter('channelId', Uuid::fromHexToBytes($this->config->getAccountChannelId($this->getAccount())), ParameterType::BINARY)
                     ->setParameter('languageId', $languageId, ParameterType::BINARY)
                     ->setFirstResult(($page - 1) * $limit)
                     ->setMaxResults($limit);

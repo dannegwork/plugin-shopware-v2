@@ -1,119 +1,163 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Doctrine\DBAL\ParameterType;
+use Shopware\Core\Defaults;
+use Doctrine\DBAL\Query\QueryBuilder;
+use Shopware\Core\Framework\Uuid\Uuid;
+
+/**
+ * Class Translation
+ * Exports public translation fields
+ *
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Translation extends ItemsAbstract
 {
 
     public function export()
     {
-        // TODO: Implement export() method.
+        $this->logger->info("BxIndexLog: Preparing products - START TRANSLATIONS EXPORT.");
+        $properties = $this->getPropertyNames();
+        foreach($properties as $property)
+        {
+            $this->logger->info("BxIndexLog: Preparing products - START $property EXPORT.");
+            $totalCount = 0; $page = 1; $data=[]; $header = true;
+            while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
+            {
+                $query = $this->connection->createQueryBuilder();
+                $query->select($this->getRequiredFields())
+                    ->from("product")
+                    ->leftJoin('product', '( ' . $this->getLocalizedFieldsQuery($property)->__toString() . ') ',
+                        'translation', 'translation.product_id = product.id AND product.version_id = translation.product_version_id')
+                    ->andWhere('product.version_id = :live')
+                    ->addGroupBy('product.id')
+                    ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+                    ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+                    ->setMaxResults(Product::EXPORTER_STEP);
+
+                $count = $query->execute()->rowCount();
+                $totalCount += $count;
+                if ($totalCount == 0) {
+                    break;
+                }
+                $data = $query->execute()->fetchAll();
+                if (count($data) > 0 && $header) {
+                    $header = false;
+                    $data = array_merge(array(array_keys(end($data))), $data);
+                }
+                foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
+                {
+                    $this->getFiles()->savePartToCsv($this->getFileNameByProperty($property), $dataSegment);
+                }
+
+                $data = []; $page++;
+                if($totalCount < Product::EXPORTER_STEP - 1) { break;}
+            }
+
+            $this->registerFilesByProperty($property);
+            $this->logger->info("BxIndexLog: Preparing products - END $property.");
+        }
+
+        $this->logger->info("BxIndexLog: Preparing products - END TRANSLATIONS.");
     }
 
     /**
-     * Export item translations
+     * Different localized fields have different scopes for definition in the export XML
      *
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
+     * @param string $property
+     * @return Translation
+     * @throws \Exception
      */
-    public function exportItemTranslationFields()
+    public function registerFilesByProperty(string $property) : Translation
     {
-        $db = $this->db;
-        $account = $this->getAccount();
-        $files = $this->getFiles();
-        $data = array();
-        $selectFields = array();
-        $attributeValueHeader = array();
-        $translationJoins = array();
-        $select = $db->select();
-        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $select->joinLeft(array("t_{$language}" => "s_articles_translations"), "t_{$language}.articleID = sa.id AND t_{$language}.languageID = {$shop_id}", array());
-            $translationJoins[$shop_id] = "t_{$language}";
-            foreach ($this->translationFields as $field) {
-                if(!isset($attributeValueHeader[$field])){
-                    $attributeValueHeader[$field] = array();
-                }
-                $column = "{$field}_{$language}";
-                $attributeValueHeader[$field][$language] = $column;
-                $mainTableRef = strpos($field, 'attr') !== false ? 'b.' . $field : 'sa.' . $field;
-                $translationRef = 't_' . $language . '.' . $field;
-                $selectFields[$column] = new Zend_Db_Expr("CASE WHEN {$translationRef} IS NULL OR CHAR_LENGTH({$translationRef}) < 1 THEN {$mainTableRef} ELSE {$translationRef} END");
-            }
-        }
-        $selectFields[] = 'a.id';
-        $header = true;
-        $countMax = 2000000;
-        $limit = 1000000;
-        $doneCases = array();
-        $log = true;
-        $totalCount = 0;
-        $start = microtime(true);
-        $page = 1;
-        $select->from(array('sa' => 's_articles'), $selectFields)
-            ->join(array('a' => 's_articles_details'), 'a.articleID = sa.id', array())
-            ->joinLeft(array('b' => 's_articles_attributes'), 'a.id = b.articledetailsID', array())
-            ->order('sa.id');
-
-        while($countMax > $totalCount + $limit) {
-            $sql = clone $select;
-            $sql->limit($limit, ($page - 1) * $limit);
-
-            if ($this->delta) {
-                $sql->where('a.articleID IN(?)', $this->deltaIds);
-            }
-
-            $currentCount = 0;
-            $this->log->info("Translation query: " . $db->quote($sql));
-            $stmt = $db->query($sql);
-            if($stmt->rowCount()) {
-                while ($row = $stmt->fetch()) {
-                    $currentCount++;
-                    if($currentCount%10000 == 0 || $log) {
-                        $end = (microtime(true) - $start) * 1000;
-                        $this->log->info("Translation process at count: {$currentCount}, took: {$end} ms, memory: " . memory_get_usage(true));
-                        $log = false;
-                    }
-                    if(!isset($this->shopProductIds[$row['id']])) {
-                        continue;
-                    }
-                    if(isset($doneCases[$row['id']])){
-                        continue;
-                    }
-                    if($header) {
-                        $data[] = array_keys($row);
-                        $header = false;
-                    }
-                    $data[] = $row;
-                    $doneCases[$row['id']] = true;
-                    $totalCount++;
-                    if(sizeof($data) > 1000) {
-                        $files->savePartToCsv('product_translations.csv', $data);
-                        $data = [];
-                    }
-                }
-            } else {
+        $labelColumns = $this->getLanguageHeaders();
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getFileNameByProperty($property)), 'product_id');
+        switch($property){
+            case $this->getTitleProperty():
+                $this->getLibrary()->addSourceTitleField($attributeSourceKey, $labelColumns);
                 break;
-            }
-            if($currentCount < $limit-1) {
+            case $this->getDescriptionProperty():
+                $this->getLibrary()->addSourceDescriptionField($attributeSourceKey, $labelColumns);
                 break;
-            }
-            $files->savepartToCsv('product_translations.csv', $data);
-            $page++;
+            default:
+                $this->getLibrary()->addSourceLocalizedTextField($attributeSourceKey, $property, $labelColumns);
+                break;
         }
 
-        $files->savepartToCsv('product_translations.csv', $data);
-        $doneCases = null;
-        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_translations.csv'), 'id');
-        $end = (microtime(true) - $start) * 1000;
-        $this->log->info("Translation process finished and took: {$end} ms, memory: " . memory_get_usage(true));
-        foreach ($attributeValueHeader as $field => $values) {
-            if ($field == 'name') {
-                $this->bxData->addSourceTitleField($attributeSourceKey, $values);
-            } else if ($field == 'description_long') {
-                $this->bxData->addSourceDescriptionField($attributeSourceKey, $values);
-            } else {
-                $this->bxData->addSourceLocalizedTextField($attributeSourceKey, $field, $values);
-            }
-        }
+        return $this;
+    }
+
+    /**
+     * @param string $property
+     * @return \Doctrine\DBAL\Query\QueryBuilder
+     * @throws \Exception
+     */
+    protected function getLocalizedFieldsQuery(string $property) : QueryBuilder
+    {
+        return $this->getLocalizedFields('product_translation', 'product_id', 'product_id',
+            'product_version_id', $property, ['product_translation.product_id', 'product_translation.product_version_id']
+        );
+    }
+
+    /**
+     * All translation fields from the product_translation table
+     *
+     * @return array
+     * @throws \Exception
+     */
+    function getRequiredFields(): array
+    {
+        $translationFields = preg_filter('/^/', 'translation.', $this->getLanguageHeaders());
+        return array_merge($translationFields,['LOWER(HEX(product.id)) AS product_id']);
+    }
+
+    /**
+     * Get translated property names
+     *
+     * @return false|mixed
+     */
+    public function getPropertyNames() : array
+    {
+        return $this->getTableColumnsByType();
+    }
+
+    /**
+     * @return string
+     */
+    public function getTitleProperty() : string
+    {
+        return 'name';
+    }
+
+    /**
+     * @return string
+     */
+    public function getDescriptionProperty() : string
+    {
+        return 'description';
+    }
+
+    /**
+     * Reading from table schema the fields which are of a string data type that contain localized values/properties
+     *
+     * @param array $columns
+     * @return false|mixed\
+     */
+    protected function getTableColumnsByType(array $columns = ['COLUMN_NAME'])
+    {
+        $dataType = ['char','varchar','blob', 'tinyblob', 'mediumblob', 'longblob', 'enum', 'text', 'mediumtext', 'tinytext', 'longtext',  'varchar'];
+        $query = $this->connection->createQueryBuilder();
+        $query->select($columns)
+            ->from('information_schema.columns')
+            ->andWhere('information_schema.columns.TABLE_SCHEMA = :database')
+            ->andWhere('information_schema.columns.TABLE_NAME = "product_translation"')
+            ->andWhere('information_schema.columns.DATA_TYPE IN (:type)')
+            ->setParameter("database", $this->connection->getDatabase(), ParameterType::STRING)
+            ->setParameter("type", implode(",", $dataType), ParameterType::STRING);
+
+        return $query->execute()->fetchColumn();
     }
 
 }

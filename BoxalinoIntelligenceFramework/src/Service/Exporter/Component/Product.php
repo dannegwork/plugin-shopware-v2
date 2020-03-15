@@ -165,7 +165,7 @@ class Product extends ExporterComponentAbstract
         $this->logger->info("BxIndexLog: Preparing products - MAIN.");
         $properties = $this->getFields();
         $rootCategoryId = $this->config->getChannelRootCategoryId($this->getAccount());
-        $defaultLanguageId = $this->config->getChannelDefaultLanguageId();
+        $defaultLanguageId = $this->config->getChannelDefaultLanguageId($this->getAccount());
         $channelId = $this->config->getAccountChannelId($this->getAccount());
 
         while (self::EXPORTER_LIMIT > $totalCount + self::EXPORTER_STEP)
@@ -174,8 +174,6 @@ class Product extends ExporterComponentAbstract
             $query->select($properties)
                 ->from('product', 'p')
                 ->leftJoin('p', 'tax', 'tax', 'tax.id = product.tax_id')
-                ->leftJoin('p', 'product_manufacturer_translation', 'product_manufacturer_translation',
-                    'p.product_manufacturer_id = product_manufacturer_translation.product_manufacturer_id AND product_manufacturer_translation.product_manufacturer_version_id = p.product_manufacturer_version_id AND product_manufacturer_translation.language_id = :defaultLanguage')
                 ->leftJoin('p', 'delivery_time_translation', 'delivery_time_translation',
                     'p.delivery_time_id = delivery_time_translation.delivery_time_id AND delivery_time_translation.language_id = :defaultLanguage')
                 ->leftJoin('p', 'unit_translation', 'unit_translation', 'unit_translation.unit_id = p.unit_id AND unit_translation.language_id = :defaultLanguage')
@@ -383,8 +381,7 @@ class Product extends ExporterComponentAbstract
             'p.tag_ids', 'p.variant_restrictions', 'p.configurator_group_config', 'p.created_at', 'p.updated_at',
             'p.rating_average', 'p.display_group', 'p.child_count',
             'JSON_EXTRACT(p.price->>\'$.*.gross\', \'$[0]\') AS price_gross', 'currency.iso_code AS currency', 'currency.factor AS currency_factor',
-            'tax.tax_rate', 'product_manufacturer_translation.name AS manufacturer_name',
-            'delivery_time_translation.name AS delivery_time_name',
+            'tax.tax_rate', 'delivery_time_translation.name AS delivery_time_name',
             'unit_translation.name AS unit_name', 'unit_translation.short_code AS unit_short_code'
         ];
     }

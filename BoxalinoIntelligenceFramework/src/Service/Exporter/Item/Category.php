@@ -7,11 +7,13 @@ use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
  * Class Category
+ * Exports product-category relations and category information
+ *
  * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
  */
 class Category extends ItemsAbstract
 {
-
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "category";
     CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'categories.csv';
     CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_categories.csv';
 
@@ -20,6 +22,7 @@ class Category extends ItemsAbstract
         $this->exportMain();
         $this->exportRelation();
     }
+
     /**
      * Export item categories
      * REQUIRED FIELDS are: id, parent_id and translation per language
@@ -28,12 +31,13 @@ class Category extends ItemsAbstract
     public function exportMain()
     {
         $this->logger->info("BxIndexLog: Preparing products - START CATEGORIES EXPORT.");
+
         $channelRootCategory = $this->config->getChannelRootCategoryId($this->getAccount());
         $query = $this->connection->createQueryBuilder();
         $query->select($this->getRequiredFields())
             ->from("category")
-            ->leftJoin('category', '( ' . $this->getTranslation()->__toString() . ') ',
-                'category_translations', 'category_translations.category_id = category.id AND category.version_id = category_translations.category_version_id')
+            ->leftJoin('category', '( ' . $this->getLocalizedFieldsQuery()->__toString() . ') ',
+                'translations', 'translations.category_id = category.id AND category.version_id = translations.category_version_id')
             ->leftJoin('category', '( ' . $this->getTags()->__toString() . ' )', 'category_tags',
                 'category_tags.category_id = category.id AND category_tags.category_version_id = category.version_id')
             ->andWhere('category.path LIKE "|:rootCategoryId|"')
@@ -48,6 +52,7 @@ class Category extends ItemsAbstract
         }
         $this->getFiles()->savePartToCsv($this->getItemMainFile(), $data);
         $this->getLibrary()->addCategoryFile($this->getFiles()->getPath($this->getItemMainFile()), 'id', 'parent_id', $this->getLanguageHeaders());
+
         $this->logger->info("BxIndexLog: Preparing products - END CATEGORIES.");
     }
 
@@ -58,46 +63,11 @@ class Category extends ItemsAbstract
      *
      * @return \Doctrine\DBAL\Query\QueryBuilder
      * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     * @throws \Exception
      */
-    public function getTranslation() : QueryBuilder
+    protected function getLocalizedFieldsQuery() : QueryBuilder
     {
-        $languages = $this->config->getAccountLanguages($this->getAccount());
-        $defaultLanguage = $this->config->getChannelDefaultLanguageId($this->getAccount());
-        $mainTable = 'category_translation';
-        $alias = []; $innerConditions = []; $leftConditions = [];
-        $selectFields = [
-            "$mainTable.category_id",
-            "$mainTable.category_version_id"
-        ];
-        foreach($languages as $languageId=>$languageCode)
-        {
-            $alias[$languageCode] = "category_translation_" . $languageCode;
-            $selectFields[] = "IF(IS_NULL($alias.name), $mainTable.name, $alias.name) as value_$languageCode";
-            $innerConditions[$languageCode] = [
-                "$mainTable.category_id = $alias.category_id",
-                "$mainTable.version_id = " .  Uuid::fromHexToBytes(Defaults::LIVE_VERSION),
-                "$mainTable.language_id = $defaultLanguage"
-            ];
-
-            $leftConditions[$languageCode] = [
-                "$mainTable.category_id = $alias.category_id",
-                "$mainTable.version_id = " .  Uuid::fromHexToBytes(Defaults::LIVE_VERSION),
-                "$mainTable.language_id = $languageId"
-            ];
-        }
-
-        $query = $this->connection->createQueryBuilder();
-        $query->select($selectFields)
-            ->from('category_translation');
-
-        foreach($languages as $languageId=>$languageCode)
-        {
-            $query->innerJoin($mainTable, $alias[$languageCode], $alias[$languageCode], implode(" AND ", $innerConditions[$languageCode]))
-                ->leftJoin($mainTable, $alias[$languageCode], $alias[$languageCode], implode(" AND ", $leftConditions[$languageCode]));
-        }
-
-        $query->groupBy(["$mainTable.category_id", "$mainTable.category_version_id"]);
-        return $query;
+        return $this->getLocalizedFields('category_translation', 'category_id', 'category_id', 'category_version_id','name', ['category_translation.category_id', 'category_translation.category_version_id']);
     }
 
     /**
@@ -163,7 +133,7 @@ class Category extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        $translationFields = preg_filter('/^/', 'category_translations.', $this->getLanguageHeaders());
+        $translationFields = preg_filter('/^/', 'translations.', $this->getLanguageHeaders());
         return array_merge($translationFields,
             [
                 'LOWER(HEX(category.id)) AS id', 'category.auto_increment', 'LOWER(HEX(category.parent_id)) as parent_id',
@@ -174,30 +144,4 @@ class Category extends ItemsAbstract
             ]
         );
     }
-
-    /**
-     * @return array
-     * @throws \Exception
-     */
-    public function getLanguageHeaders() : array
-    {
-        return preg_filter('/^/', 'value_',$this->config->getAccountLanguages($this->getAccount()));
-    }
-
-    /**
-     * @return string
-     */
-    public function getItemMainFile()
-    {
-        return self::EXPORTER_COMPONENT_ITEM_MAIN_FILE;
-    }
-
-    /**
-     * @return string
-     */
-    public function getItemRelationFile()
-    {
-        return self::EXPORTER_COMPONENT_ITEM_RELATION_FILE;
-    }
-
 }

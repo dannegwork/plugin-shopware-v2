@@ -119,7 +119,7 @@ class Configuration
     {
         $query = $this->connection->createQueryBuilder();
         $query->select([
-            'LOWER(sales_channel.id) as sales_channel_id',
+            'LOWER(HEX(sales_channel.id)) as sales_channel_id',
             'sales_channel.language_id AS sales_channel_default_language_id',
             'sales_channel.currency_id AS sales_channel_default_currency_id',
             'sales_channel.customer_group_id as sales_channel_customer_group_id',

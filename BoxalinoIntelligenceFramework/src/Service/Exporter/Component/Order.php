@@ -93,7 +93,7 @@ class Order extends ExporterComponentAbstract
                     ->andWhere("locale.code=:language")
                     ->andWhere("order.sales_channel_id=:channelId")
                     ->orderBy('order.order_date_time', 'DESC')
-                    ->setParameter('channelId', $this->config->getAccountChannelId($this->getAccount()), ParameterType::BINARY)
+                    ->setParameter('channelId', Uuid::fromHexToBytes($this->config->getAccountChannelId($this->getAccount())), ParameterType::BINARY)
                     ->setParameter('language', $language, ParameterType::STRING)
                     ->setFirstResult(($page - 1) * $limit)
                     ->setMaxResults($limit);
