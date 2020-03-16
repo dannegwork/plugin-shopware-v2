@@ -246,10 +246,12 @@ class Product extends ExporterComponentAbstract
         $this->_exportExtra("categories", $this->categoryExporter);
         $this->_exportExtra("translations", $this->translationExporter);
         $this->_exportExtra("manufacturers", $this->manufacturerExporter);
-        $this->_exportExtra("facets", $this->facetExporter);
+       # $this->_exportExtra("facets", $this->facetExporter);
         $this->_exportExtra("prices", $this->priceExporter);
         $this->_exportExtra("reviews", $this->reviewsExporter);
-        $this->_exportExtra("productStreams", $this->streamExporter);
+        $this->_exportExtra("tags", $this->tagExporter);
+        $this->_exportExtra("visibility", $this->visibilityExporter);
+       # $this->_exportExtra("productStreams", $this->streamExporter);
 
         if ($this->config->exportProductImages($this->getAccount()))
         {
@@ -328,14 +330,6 @@ class Product extends ExporterComponentAbstract
     }
 
     /**
-     * @return string
-     */
-    public function getProductChannelMainFile() : string
-    {
-        return self::BOXALINO_EXPORT_PRODUCT_SHOP_CSV;
-    }
-
-    /**
      * Getting a list of product attributes and the table it comes from
      * To be used in the general SQL select
      *
@@ -348,6 +342,7 @@ class Product extends ExporterComponentAbstract
     }
 
     /**
+     * @TODO export as properties: tax, delivery_time, unit
      * @return array
      */
     public function getRequiredProperties(): array
@@ -357,13 +352,14 @@ class Product extends ExporterComponentAbstract
             'LOWER(HEX(p.tax_id)) AS tax_id', 'LOWER(HEX(p.product_manufacturer_id)) AS product_manufacturer_id',
             'LOWER(HEX(p.delivery_time_id)) AS delivery_time_id', 'LOWER(HEX(p.product_media_id)) AS product_media_id',
             'LOWER(HEX(p.cover)) AS cover', 'LOWER(HEX(p.unit_id)) AS unit_id', 'p.category_tree', 'p.option_ids',
-            'p.property_ids', 'p.price AS price_json', 'p.manufacturer_number', 'p.ean',
+            'p.property_ids', 'p.manufacturer_number', 'p.ean',
             'p.stock', 'p.available_stock', 'p.available', 'p.restock_time', 'p.is_closeout', 'p.purchase_steps',
             'p.max_purchase', 'p.min_purchase', 'p.purchase_unit', 'p.reference_unit', 'p.shipping_free', 'p.purchase_price',
             'p.mark_as_topseller', 'p.weight', 'p.height', 'p.length', 'p.release_date', 'p.whitelist_ids', 'p.blacklist_ids',
-            'p.tag_ids', 'p.variant_restrictions', 'p.configurator_group_config', 'p.created_at', 'p.updated_at',
+            'p.variant_restrictions', 'p.configurator_group_config', 'p.created_at', 'p.updated_at',
             'p.rating_average', 'p.display_group', 'p.child_count',
-            'JSON_EXTRACT(p.price->>\'$.*.gross\', \'$[0]\') AS price_gross', 'currency.iso_code AS currency', 'currency.factor AS currency_factor',
+            'JSON_EXTRACT(p.price->>\'$.*.gross\', \'$[0]\') AS price_gross', 'JSON_EXTRACT(p.price->>\'$.*.net\', \'$[0]\') AS price_gross',
+            'currency.iso_code AS currency', 'currency.factor AS currency_factor',
             'tax.tax_rate', 'delivery_time_translation.name AS delivery_time_name',
             'unit_translation.name AS unit_name', 'unit_translation.short_code AS unit_short_code'
         ];

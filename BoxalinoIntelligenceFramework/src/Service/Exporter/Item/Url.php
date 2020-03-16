@@ -64,7 +64,7 @@ class Url extends ItemsAbstract
         if($success)
         {
             $sourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemMainFile()), 'product_id');
-            $this->getLibrary()->addSourceLocalizedTextField($sourceKey, 'seo_url', $this->getLanguageHeaders());
+            $this->getLibrary()->addSourceLocalizedTextField($sourceKey, $this->getPropertyName(), $this->getLanguageHeaders());
         }
     }
 

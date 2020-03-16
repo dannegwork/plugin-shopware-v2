@@ -45,7 +45,6 @@ class Manufacturer extends ItemsAbstract
         $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER RELATIONS EXPORT.");
         $totalCount = 0; $page = 1; $header = true; $success = true;
         $rootCategoryId = $this->config->getChannelRootCategoryId($this->getAccount());
-        $defaultLanguageId = $this->config->getChannelDefaultLanguageId($this->getAccount());
 
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
@@ -58,7 +57,6 @@ class Manufacturer extends ItemsAbstract
                 ->addGroupBy('p.product_id')
                 ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
                 ->setParameter('channelRootCategoryId', $rootCategoryId, ParameterType::STRING)
-                ->setParameter('defaultLanguage', Uuid::fromHexToBytes($defaultLanguageId), ParameterType::BINARY)
                 ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
                 ->setMaxResults(Product::EXPORTER_STEP);
 

@@ -44,7 +44,7 @@ class Media extends ItemsAbstract
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
             $query = $this->connection->createQueryBuilder();
-            $query->select(["GROUP_CONCAT(LOWER(HEX(product_media.id)) ORDER BY product_media.position SEPARATOR '|') AS value"])
+            $query->select(["GROUP_CONCAT(LOWER(HEX(product_media.id)) ORDER BY product_media.position SEPARATOR '|') AS value", "product_media.product_id"])
                 ->from("product_media")
                 ->andWhere('product_media.product_version_id = :live')
                 ->andWhere('product_media.version_id = :live')

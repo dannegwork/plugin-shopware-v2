@@ -1,98 +1,125 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+use Shopware\Core\Checkout\Cart\Rule\CartAmountRule;
+use Shopware\Core\Checkout\Cart\Price\Struct\CartPrice;
+use Shopware\Core\System\SalesChannel\Context\SalesChannelContextService
+use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
+use Psr\Log\LoggerInterface;
+use Shopware\Core\Framework\Uuid\Uuid;
+use Shopware\Core\Defaults;
+
+/**
+ * Class Price
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Price extends ItemsAbstract
 {
 
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "price";
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'prices.csv';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_price.csv';
+
+    /**
+     * @var SalesChannelContextService
+     */
+    protected $salesChannelContextService;
+
+    /**
+     * @var CartAmountRule
+     */
+    protected $cartAmmountRule;
+
+    public function __construct(
+        CartAmountRule $cartAmountRule,
+        SalesChannelContextService $salesChannelContextService,
+        Connection $connection,
+        LoggerInterface $logger,
+        Configuration $exporterConfigurator
+    ){
+        $this->cartAmmountRule = $cartAmountRule;
+        $this->salesChannelContextService = $salesChannelContextService;
+        parent::__construct($connection, $logger, $exporterConfigurator);
+    }
+
     public function export()
     {
-        // TODO: Implement export() method.
+        $this->logger->info("BxIndexLog: Preparing products - START PRICE EXPORT.");
+        $totalCount = 0; $page = 1; $header = true; $success = true;
+        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
+        {
+            $query = $this->connection->createQueryBuilder();
+            $query->select($this->getRequiredFields())
+                ->from("product_price")
+                ->leftJoin("product_price", 'rule_condition', 'rule_condition', 'product_price.rule_id = rule_condition.rule_id AND rule_condition.type = :priceRuleType')
+                ->andWhere('product_price.quantity_start = 1')
+                ->andWhere('product_price.product_version_id = :live')
+                ->andWhere('product_price.version_id = :live')
+                ->addGroupBy('product_price.product_id')
+                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+                ->setParameter('priceRuleType', $this->cartAmmountRule->getName(), ParameterType::STRING)
+                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+                ->setMaxResults(Product::EXPORTER_STEP);
+
+            $count = $query->execute()->rowCount();
+            $totalCount += $count;
+            if ($totalCount == 0) {
+                if($page==1){
+                    $success = false;
+                }
+                break;
+            }
+            $data = $query->execute()->fetchAll();
+            if (count($data) > 0 && $header) {
+                $header = false;
+                $data = array_merge(array(array_keys(end($data))), $data);
+            }
+            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
+            {
+                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
+            }
+
+            $data = []; $page++;
+            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
+        }
+
+        if($success)
+        {
+            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+            $this->getLibrary()->addSourceDiscountedPriceField($attributeSourceKey, 'price');
+            $this->getLibrary()->addSourceListPriceField($attributeSourceKey, 'price');
+            $this->getLibrary()->addSourceNumberField($attributeSourceKey, 'bx_grouped_price', 'price');
+            $this->getLibrary()->addFieldParameter($attributeSourceKey, 'bx_grouped_price', 'multiValued', 'false');
+        }
+
+        $this->logger->info("BxIndexLog: Preparing products - END PRICE.");
     }
 
     /**
-     * Export item prices to product_price.csv
-     * Creating logical fields for DI integration: discounted, bx_grouped_price
+     * Depending on the channel configuration, the gross or net price is the one displayed to the user
+     * @duplicate logic from the src/Core/Content/Product/SalesChannel/Price/ProductPriceDefinitionBuilder.php :: getPriceForTaxState()
      *
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
+     * @return array
+     * @throws \Exception
      */
-    public function exportItemPrices()
+    public function getRequiredFields(): array
     {
-        $account = $this->getAccount();
-        $files = $this->getFiles();
-        $customer_group_key = $this->_config->getCustomerGroupKey($account);
-        $customer_group_id = $this->_config->getCustomerGroupId($account);
-        $header = true;
-        $db = $this->db;
-        $sql = $db->select()
-            ->from(array('a' => 's_articles'),array('pricegroupActive', 'laststock')
-            )
-            ->join(
-                array('d' => 's_articles_details'),
-                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
-                $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('d.id', 'd.articleID', 'd.instock', 'd.active')
-            )
-            ->joinLeft(array('a_p' => 's_articles_prices'), 'a_p.articledetailsID = d.id', array('price', 'pseudoprice'))
-            ->joinLeft(array('c_c' => 's_core_customergroups'), 'c_c.groupkey = a_p.pricegroup',array())
-            ->joinLeft(array('c_t' => 's_core_tax'), 'c_t.id = a.taxID', array('tax'))
-            ->joinLeft(
-                array('p_d' => 's_core_pricegroups_discounts'),
-                'p_d.groupID = a.pricegroupID AND p_d.customergroupID = ' . $customer_group_id ,
-                array('pg_discounts' => 'discount')
-            )
-            ->where('a_p.pricegroup = ?', $customer_group_key)
-            ->where('a_p.from = ?', 1);
-        if ($this->delta) {
-            $sql->where('a.id IN(?)', $this->deltaIds);
+        $salesChannelContext = $this->salesChannelContextService->get($this->getChannelId(), "boxalinoexporttoken",
+            $this->config->getChannelDefaultLanguageId($this->getAccount()));
+        if ($salesChannelContext->getTaxState() === CartPrice::TAX_STATE_GROSS) {
+            return [
+                'FORMAT(JSON_EXTRACT(product_price.price->>\'$.*.gross\', \'$[0]\'), 2) AS price',
+                'product_price.product_id'
+            ];
         }
 
-        $grouped_price = array();
-        $data = array();
-        $stmt = $db->query($sql);
-        while ($row = $stmt->fetch()) {
-            if(!isset($this->shopProductIds[$row['id']])){
-                continue;
-            }
-            $taxFactor = ((floatval($row['tax']) + 100.0) /100);
-            if ($row['pseudoprice'] == 0) $row['pseudoprice'] = $row['price'];
-            $pseudo = floatval($row['pseudoprice']) * $taxFactor;
-            $discount = floatval($row['price']) * $taxFactor;
-            if (!is_null($row['pg_discounts']) && $row['pricegroupActive'] == 1) {
-                $discount = $discount - ($discount * ((floatval($row['pg_discounts'])) /100));
-            }
-            $price = $pseudo > $discount ? $pseudo : $discount;
-            if($header) {
-                $data[] = ["id", "price", "discounted", "articleID", "grouped_price"];
-                $header = false;
-            }
-            $data[$row['id']] = array("id" => $row['id'], "price" => number_format($price,2, '.', ''), "discounted" => number_format($discount,2, '.', ''), "articleID" => $row['articleID']);
-
-            if ($row['active'] == 1) {
-                if(isset($grouped_price[$row['articleID']]) && ($grouped_price[$row['articleID']] < number_format($discount,2, '.', ''))) {
-                    continue;
-                }
-                $grouped_price[$row['articleID']] = number_format($discount,2, '.', '');
-            }
-        }
-
-        foreach ($data as $index => $d) {
-            if($index == 0) continue;
-            $articleID = $d['articleID'];
-            if(isset($grouped_price[$articleID])){
-                $data[$index]['grouped_price'] = $grouped_price[$articleID];
-                continue;
-            }
-            $data[$index]['grouped_price'] = $data[$index]['discounted'];
-        }
-
-        $grouped_price = null;
-        $files->savepartToCsv('product_price.csv', $data);
-        $sourceKey = $this->bxData->addCSVItemFile($files->getPath('product_price.csv'), 'id');
-        $this->bxData->addSourceDiscountedPriceField($sourceKey, 'discounted');
-        $this->bxData->addSourceListPriceField($sourceKey, 'price');
-        $this->bxData->addSourceNumberField($sourceKey, 'bx_grouped_price', 'grouped_price');
-        $this->bxData->addFieldParameter($sourceKey,'bx_grouped_price', 'multiValued', 'false');
+        return [
+            'FORMAT(JSON_EXTRACT(product_price.price->>\'$.*.net\', \'$[0]\'), 2) AS price',
+            'product_price.product_id'
+        ];
     }
 
 }
