@@ -5,7 +5,7 @@ use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Manufacturer;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Category;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Facet;
-use Boxalino\IntelligenceFramework\Service\Exporter\Item\Images;
+use Boxalino\IntelligenceFramework\Service\Exporter\Item\Media;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Price;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Stream;
 use Boxalino\IntelligenceFramework\Service\Exporter\Item\Translation;
@@ -60,7 +60,7 @@ class Product extends ExporterComponentAbstract
     protected $facetExporter;
 
     /**
-     * @var Images
+     * @var Media
      */
     protected $imagesExporter;
 
@@ -105,22 +105,6 @@ class Product extends ExporterComponentAbstract
     protected $visibilityExporter;
 
     /**
-     * @var array
-     * @TODO read fields from export configuration table
-     */
-    protected $translationFields = array(
-        'name',
-        'keywords',
-        'description',
-        'description_long',
-        'attr1',
-        'attr2',
-        'attr3',
-        'attr4',
-        'attr5'
-    );
-
-    /**
      * @deprecated
      */
     protected $extraSteps = [];
@@ -132,7 +116,7 @@ class Product extends ExporterComponentAbstract
         Configuration $exporterConfigurator,
         Category $categoryExporter,
         Facet $facetExporter,
-        Images $imagesExporter,
+        Media $imagesExporter,
         Manufacturer $manufacturerExporter,
         Price $priceExporter,
         Stream $streamExporter,
@@ -221,7 +205,6 @@ class Product extends ExporterComponentAbstract
                     $this->getFiles()->savePartToCsv($this->getComponentMainFile(), $data);
                     $data = [];
                 }
-
             }
 
             $this->getFiles()->savePartToCsv($this->getComponentMainFile(), $data);
@@ -270,7 +253,7 @@ class Product extends ExporterComponentAbstract
 
         if ($this->config->exportProductImages($this->getAccount()))
         {
-            $this->_exportExtra("images", $this->imagesExporter);
+            $this->_exportExtra("media", $this->imagesExporter);
         }
 
         if ($this->config->exportProductUrl($this->getAccount()))

@@ -56,7 +56,7 @@ class Visibility extends ItemsAbstract
         if($success)
         {
             $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->addSourceStringField($attributeSourceKey, self::EXPORTER_COMPONENT_ITEM_NAME, 'value');
+            $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), 'value');
         }
 
         $this->logger->info("BxIndexLog: Preparing products - END VISIBILITY.");
