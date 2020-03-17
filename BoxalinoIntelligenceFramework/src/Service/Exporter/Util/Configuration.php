@@ -10,7 +10,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\ConfigJsonField;
 class Configuration
 {
 
-    CONST BOXALINO_FRAMEWORK_CONFIG_KEY = "BoxalinoIntelligenceFramework.config.";
+    CONST BOXALINO_FRAMEWORK_CONFIG_KEY = "BoxalinoIntelligenceFramework";
 
     protected $exporterConfigurationFields = [
         "status",
@@ -57,6 +57,8 @@ class Configuration
 
     /**
      * @param Connection $connection
+     * @param SystemConfigService $systemConfigService
+     * @param \Psr\Log\LoggerInterface $logger
      */
     public function __construct(
         Connection $connection,
@@ -101,13 +103,18 @@ class Configuration
             return [];
         }
 
-        if (!(bool)$config['exporter'] || $config['exporter'] != 1)
+        if (!(bool)$config['export'] || $config['export'] != 1)
         {
             $this->logger->info("BoxalinoIntelligenceFramework:: Exporter disabled on channel $channel; Plugin Configurations skipped.");
             return [];
         }
 
-        return array_combine($this->exporterConfigurationFields, $config);
+        foreach($this->exporterConfigurationFields as $field)
+        {
+            if(!isset($config[$field])) {$config[$field] = "";}
+        }
+
+        return $config;
     }
 
     /**
@@ -133,8 +140,8 @@ class Configuration
             ->leftJoin(
                 'sales_channel',
                 'sales_channel_language',
-                'mapping',
-                'sales_channel.id = mapping.sales_channel_id'
+                'sales_channel_language',
+                'sales_channel.id = sales_channel_language.sales_channel_id'
             )
             ->leftJoin(
                 'sales_channel',

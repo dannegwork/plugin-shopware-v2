@@ -15,7 +15,7 @@ class ComponentResource
 
 
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
@@ -25,7 +25,7 @@ class ComponentResource
      */
     public function __construct(
         Connection $connection,
-        Psr\Log\LoggerInterface $logger
+        LoggerInterface $logger
     ) {
         $this->connection = $connection;
         $this->logger = $logger;

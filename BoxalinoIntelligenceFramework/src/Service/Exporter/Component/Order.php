@@ -166,7 +166,6 @@ class Order extends ExporterComponentAbstract
         return $this->config->getAccountTransactionsProperties($this->getAccount(), $this->getRequiredProperties(), []);
     }
 
-
     /**
      * @return array
      */

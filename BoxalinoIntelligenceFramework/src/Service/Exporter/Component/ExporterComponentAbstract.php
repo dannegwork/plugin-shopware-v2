@@ -66,6 +66,7 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     /**
      * ExporterComponentAbstract constructor.
      *
+     * @param ComponentResource $resource
      * @param Connection $connection
      * @param LoggerInterface $logger
      * @param Configuration $exporterConfigurator
@@ -85,7 +86,6 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     abstract function exportComponent();
     abstract function getRequiredProperties() : array;
     abstract function getFields() : array;
-
 
     /**
      * Common logic for component export

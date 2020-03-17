@@ -2,6 +2,7 @@
 namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
 use Doctrine\DBAL\Connection;
+use Psr\Log\LoggerInterface;
 
 class ExporterScheduler
 {
@@ -20,7 +21,7 @@ class ExporterScheduler
 
 
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
@@ -30,7 +31,7 @@ class ExporterScheduler
      */
     public function __construct(
         Connection $connection,
-        Psr\Log\LoggerInterface $logger
+        LoggerInterface $logger
     ) {
         $this->connection = $connection;
         $this->logger = $logger;

@@ -28,10 +28,10 @@ class Media extends ItemsAbstract
     protected $mediaUrlGenerator;
 
     public function __construct(
-        UrlGeneratorInterface $generator,
         Connection $connection,
         LoggerInterface $logger,
-        Configuration $exporterConfigurator
+        Configuration $exporterConfigurator,
+        UrlGeneratorInterface $generator
     ){
         $this->mediaUrlGenerator = $generator;
         parent::__construct($connection, $logger, $exporterConfigurator);

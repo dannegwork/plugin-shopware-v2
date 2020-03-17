@@ -56,8 +56,9 @@ class FileHandler
 
     /**
      * @param string $dir
+     * @return bool
      */
-    protected function delTree(string $dir) : void
+    protected function delTree(string $dir)
     {
         $files = array_diff(scandir($dir), array('.', '..'));
         foreach ($files as $file) {

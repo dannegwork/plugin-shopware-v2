@@ -1,8 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Exporter;
 
-use Boxalino\IntelligenceFramework\Service\Exporter\ExporterDelta;
-use Boxalino\IntelligenceFramework\Service\Exporter\ExporterFull;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,13 +15,12 @@ class ExporterCommand extends Command
 
     public function __construct(
         ExporterDelta $deltaExporter,
-        ExporterFull $fullExporter,
-        string $name = null
+        ExporterFull $fullExporter
     ){
+        parent::__construct();
+
         $this->exporterDelta = $deltaExporter;
         $this->exporterFull = $fullExporter;
-
-        parent::__construct($name);
     }
 
     protected function configure()
@@ -80,4 +77,5 @@ class ExporterCommand extends Command
         $output->writeln("Boxalino export finished.");
         return 0;
     }
+
 }

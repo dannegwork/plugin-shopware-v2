@@ -38,8 +38,6 @@ class Product extends ExporterComponentAbstract
     CONST EXPORTER_COMPONENT_TYPE = "products";
     CONST EXPORTER_COMPONENT_ID_FIELD = "id";
 
-    CONST BOXALINO_EXPORT_PRODUCT_SHOP_CSV = "product-shop.csv";
-
     protected $lastExport;
     protected $exportedProductIds = [];
     protected $deltaIds = [];
@@ -103,11 +101,6 @@ class Product extends ExporterComponentAbstract
      * @var Visibility
      */
     protected $visibilityExporter;
-
-    /**
-     * @deprecated
-     */
-    protected $extraSteps = [];
 
     public function __construct(
         ComponentResource $resource,

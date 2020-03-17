@@ -88,11 +88,6 @@ class ExporterService
             }
 
             $this->logger->info("BxIndexLog: Start of Boxalino {$this->getType()} data sync.");
-            if(!$this->getIsFull())
-            {
-                $this->logger->info("BxIndexLog: Exporting products updated since {$this->getLastExport()} data sync.");
-            }
-
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_PROCESSING, $account);
             $this->logger->info("BxIndexLog: Exporting store ID : {$this->configurator->getAccountChannelId($account)}");
 
@@ -139,7 +134,8 @@ class ExporterService
         $this->productExporter->setAccount($this->getAccount())
             ->setFiles($this->getFiles())
             ->setLibrary($this->getLibrary())
-            ->setIsDelta(!$this->getIsFull());
+            ->setIsDelta(!$this->getIsFull())
+            ->setType($this->getType());
 
         $this->productExporter->export();
     }
@@ -154,6 +150,7 @@ class ExporterService
         if(is_null($this->lastExport))
         {
             $this->lastExport = $this->scheduler->getLastExportByAccountType($this->getAccount(), $this->getType());
+            #$this->lastExport = $this->scheduler->getLastSuccessfulExportByAccount($this->getAccount());
         }
 
         return $this->lastExport;

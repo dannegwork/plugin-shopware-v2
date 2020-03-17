@@ -3,7 +3,8 @@ namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
 use Shopware\Core\Checkout\Cart\Rule\CartAmountRule;
 use Shopware\Core\Checkout\Cart\Price\Struct\CartPrice;
-use Shopware\Core\System\SalesChannel\Context\SalesChannelContextService
+#use Shopware\Core\System\SalesChannel\Context\SalesChannelContextService;
+use Shopware\Core\Profiling\Checkout\SalesChannelContextServiceProfiler;
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Doctrine\DBAL\Connection;
@@ -24,7 +25,7 @@ class Price extends ItemsAbstract
     CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_price.csv';
 
     /**
-     * @var SalesChannelContextService
+     * @var SalesChannelContextServiceProfiler
      */
     protected $salesChannelContextService;
 
@@ -34,11 +35,11 @@ class Price extends ItemsAbstract
     protected $cartAmmountRule;
 
     public function __construct(
-        CartAmountRule $cartAmountRule,
-        SalesChannelContextService $salesChannelContextService,
         Connection $connection,
         LoggerInterface $logger,
-        Configuration $exporterConfigurator
+        Configuration $exporterConfigurator,
+        CartAmountRule $cartAmountRule,
+        SalesChannelContextServiceProfiler $salesChannelContextService
     ){
         $this->cartAmmountRule = $cartAmountRule;
         $this->salesChannelContextService = $salesChannelContextService;
@@ -54,7 +55,8 @@ class Price extends ItemsAbstract
             $query = $this->connection->createQueryBuilder();
             $query->select($this->getRequiredFields())
                 ->from("product_price")
-                ->leftJoin("product_price", 'rule_condition', 'rule_condition', 'product_price.rule_id = rule_condition.rule_id AND rule_condition.type = :priceRuleType')
+                ->leftJoin("product_price", 'rule_condition', 'rule_condition',
+                    'product_price.rule_id = rule_condition.rule_id AND rule_condition.type = :priceRuleType')
                 ->andWhere('product_price.quantity_start = 1')
                 ->andWhere('product_price.product_version_id = :live')
                 ->andWhere('product_price.version_id = :live')

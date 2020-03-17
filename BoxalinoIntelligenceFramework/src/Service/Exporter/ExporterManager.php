@@ -50,7 +50,13 @@ abstract class ExporterManager
      */
     protected $exporterService;
 
-
+    /**
+     * ExporterManager constructor.
+     * @param LoggerInterface $logger
+     * @param Configuration $exporterConfigurator
+     * @param \Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler $scheduler
+     * @param \Boxalino\IntelligenceFramework\Service\Exporter\ExporterService $exporterService
+     */
     public function __construct(
         LoggerInterface $logger,
         Configuration $exporterConfigurator,
