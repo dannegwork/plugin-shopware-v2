@@ -25,7 +25,7 @@ class FileHandler
     protected $account;
     protected $_dir;
     protected $type;
-    protected $_files;
+    protected $_files = [];
 
     /**
      * Prepares rootr directory where the exported files are to be stored

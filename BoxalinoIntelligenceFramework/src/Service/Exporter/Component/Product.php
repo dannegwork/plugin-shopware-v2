@@ -43,11 +43,6 @@ class Product extends ExporterComponentAbstract
     protected $deltaIds = [];
 
     /**
-     * @var bool
-     */
-    protected $successOnComponentExport = false;
-
-    /**
      * @var Category
      */
     protected $categoryExporter;
@@ -150,17 +145,17 @@ class Product extends ExporterComponentAbstract
             $query = $this->connection->createQueryBuilder();
             $query->select($properties)
                 ->from('product', 'p')
-                ->leftJoin('p', 'tax', 'tax', 'tax.id = product.tax_id')
+                ->leftJoin('p', 'tax', 'tax', 'tax.id = p.tax_id')
                 ->leftJoin('p', 'delivery_time_translation', 'delivery_time_translation',
                     'p.delivery_time_id = delivery_time_translation.delivery_time_id AND delivery_time_translation.language_id = :defaultLanguage')
                 ->leftJoin('p', 'unit_translation', 'unit_translation', 'unit_translation.unit_id = p.unit_id AND unit_translation.language_id = :defaultLanguage')
                 ->leftJoin('p', 'currency', 'currency', "JSON_UNQUOTE(JSON_EXTRACT(p.price->>'$.*.currencyId', '$[0]')) = LOWER(HEX(currency.id))")
-                ->andWhere('p.version_id = :version')
+                ->andWhere('p.version_id = :live')
                 ->andWhere("JSON_SEARCH(p.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
                 ->andWhere('p.price IS NOT NULL') #REMOVE PRODUCTS WHICH HAVE NO PRICE SET
                 ->addGroupBy('p.id')
                 ->orderBy('p.id', 'DESC')
-                ->setParameter('version', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
                 ->setParameter('channelRootCategoryId', $rootCategoryId, ParameterType::STRING)
                 ->setParameter('defaultLanguage', Uuid::fromHexToBytes($defaultLanguageId), ParameterType::BINARY)
                 ->setFirstResult(($page - 1) * self::EXPORTER_STEP)
@@ -226,14 +221,14 @@ class Product extends ExporterComponentAbstract
     /**
      * Export other product elements and properties (categories, translations, etc)
      *
-     * @return $this
+     * @return void
      * @throws \Exception
      */
-    public function exportItems() : Product
+    public function exportItems() : void
     {
         if (!$this->getSuccessOnComponentExport())
         {
-            return $this;
+            return;
         }
 
         $this->_exportExtra("categories", $this->categoryExporter);
@@ -255,8 +250,6 @@ class Product extends ExporterComponentAbstract
         {
             $this->_exportExtra("urls", $this->urlExporter);
         }
-
-        return $this;
     }
 
 
@@ -269,7 +262,9 @@ class Product extends ExporterComponentAbstract
     protected function _exportExtra($step, $exporter)
     {
         $this->logger->info("BxIndexLog: Preparing products - {$step}.");
-        $exporter->setAccount($this->getAccount())->setFiles($this->getFiles())->setExportedProductIds($this->exportedProductIds);
+        $exporter->setAccount($this->getAccount())
+            ->setFiles($this->getFiles())
+            ->setExportedProductIds($this->exportedProductIds);
         $exporter->export();
         $this->logger->info("BxIndexLog: {$step} exporter after memory: " . memory_get_usage(true));
         $this->logger->info("BxIndexLog: Finished products - {$step}.");
@@ -277,10 +272,10 @@ class Product extends ExporterComponentAbstract
 
     /**
      * @param array $properties
-     * @return Product
+     * @return void
      * @throws \Exception
      */
-    public function defineOtherProperties(array $properties) : Product
+    public function defineOtherProperties(array $properties) : void
     {
         $mainSourceKey = $this->getLibrary()->addMainCSVItemFile($this->getFiles()->getPath($this->getComponentMainFile()), $this->getComponentIdField());
         $this->getLibrary()->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
@@ -306,20 +301,6 @@ class Product extends ExporterComponentAbstract
                 $this->getLibrary()->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
-
-        return $this;
-    }
-
-    /**
-     * @param $query
-     * @return \Generator
-     */
-    public function processExport(QueryBuilder $query)
-    {
-        foreach($query->execute()->fetchAll() as $row)
-        {
-            yield $row;
-        }
     }
 
     /**
@@ -331,7 +312,8 @@ class Product extends ExporterComponentAbstract
      */
     public function getFields() : array
     {
-        return $this->config->getAccountProductsProperties($this->getAccount(), $this->getRequiredProperties(), []);
+        return $this->getRequiredProperties();
+        #return $this->config->getAccountProductsProperties($this->getAccount(), $this->getRequiredProperties(), []);
     }
 
     /**
@@ -383,24 +365,6 @@ class Product extends ExporterComponentAbstract
         }
 
         return $this->lastExport;
-    }
-
-    /**
-     * @param bool $value
-     * @return Product
-     */
-    public function setSuccessOnComponentExport(bool $value) : Product
-    {
-        $this->successOnComponentExport = $value;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getSuccessOnComponentExport()
-    {
-        return $this->successOnComponentExport;
     }
 
     /**

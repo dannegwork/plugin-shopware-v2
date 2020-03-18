@@ -46,7 +46,7 @@ class ExporterScheduler
     {
         $query = $this->connection->createQueryBuilder();
         $query->select(['export_date'])
-            ->from("boxalino_exports")
+            ->from("boxalino_export")
             ->andWhere("account = :account")
             ->andWhere("type = :type")
             ->orderBy("export_date", "DESC")
@@ -71,7 +71,7 @@ class ExporterScheduler
     {
         $query = $this->connection->createQueryBuilder();
         $query->select(['export_date'])
-            ->from("boxalino_exports")
+            ->from("boxalino_export")
             ->andWhere("account = :account")
             ->andWhere("status = :status")
             ->andWhere("type = :type")
@@ -99,11 +99,11 @@ class ExporterScheduler
     {
         if(is_null($type))
         {
-            $this->connection->delete("boxalino_exports", ["account"=>$account]);
+            $this->connection->delete("boxalino_export", ["account"=>$account]);
             return true;
         }
 
-        $this->connection->delete("boxalino_exports", ["account"=>$account, "type" => $type]);
+        $this->connection->delete("boxalino_export", ["account"=>$account, "type" => $type]);
         return true;
     }
 
@@ -116,7 +116,7 @@ class ExporterScheduler
     {
         $query = $this->connection->createQueryBuilder();
         $query->select()
-            ->from("boxalino_exports");
+            ->from("boxalino_export");
 
         return $query->execute()->fetchAll();
     }
@@ -138,13 +138,14 @@ class ExporterScheduler
         $stuckProcessTime = date("Y-m-d H:i:s", strtotime("-15min"));
         $query = $this->connection->createQueryBuilder();
         $query->select(['export_date', 'account'])
-            ->from('boxalino_exports')
+            ->from('boxalino_export')
             ->andWhere('account <> :account')
             ->andWhere('status = :status')
             ->setParameter('account', $account)
             ->setParameter('status', self::BOXALINO_EXPORTER_STATUS_PROCESSING);
 
         $processes = $query->execute()->fetchAll();
+        $this->logger->debug(json_encode($processes));
         if(empty($processes))
         {
             if($type == self::BOXALINO_EXPORTER_TYPE_FULL)
@@ -172,7 +173,7 @@ class ExporterScheduler
     {
         $latestRunOnAccount = $this->connection->createQueryBuilder();
         $latestRunOnAccount->select(['export_date'])
-            ->from('boxalino_exports')
+            ->from('boxalino_export')
             ->andWhere('account = :account')
             ->andWhere('type = :type')
             ->setParameter('account', $account)
@@ -198,10 +199,8 @@ class ExporterScheduler
             $status
         ];
 
-        $query='INSERT INTO boxalino_exports (account, type, export_date, status) VALUES (?, ?, ?, ?) '.
-            'ON DUPLICATE KEY UPDATE '
-            . $this->connection->quoteInto("export_date = ?", $date) . ', '
-            . $this->connection->quoteInto("status = ?", $status) . ';';
+        $query="INSERT INTO boxalino_export (account, type, export_date, status) VALUES (?, ?, ?, ?) ".
+            "ON DUPLICATE KEY UPDATE export_date = '$date', status = '$status', updated_at=NOW();";
 
         return $this->connection->executeUpdate(
             $query,

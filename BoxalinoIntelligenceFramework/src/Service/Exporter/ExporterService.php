@@ -4,10 +4,10 @@ namespace Boxalino\IntelligenceFramework\Service\Exporter;
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\Customer;
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\Order;
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
-use Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler;
 use Doctrine\DBAL\Connection;
 use LogicException;
 use Shopware\Core\Defaults;
@@ -41,9 +41,7 @@ class ExporterService
     protected $fileHandler;
     protected $configurator;
 
-    protected $deltaIds = array();
     protected $library;
-    protected $files;
     protected $account;
     protected $type;
     protected $exporterId;
@@ -75,7 +73,7 @@ class ExporterService
      * @return string
      * @throws \Doctrine\DBAL\DBALException
      */
-    public function run()
+    public function export()
     {
         set_time_limit(7200);
         $account = $this->getAccount();
@@ -87,7 +85,6 @@ class ExporterService
                 throw new \Exception("BxIndexLog: Cancelled Boxalino {$this->getType()} data sync. The account/directory path name can not be empty.");
             }
 
-            $this->logger->info("BxIndexLog: Start of Boxalino {$this->getType()} data sync.");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_PROCESSING, $account);
             $this->logger->info("BxIndexLog: Exporting store ID : {$this->configurator->getAccountChannelId($account)}");
 
@@ -99,9 +96,10 @@ class ExporterService
             $this->logger->info("BxIndexLog: Preparing products.");
 
             $this->exportProducts();
-            $this->exportOthers();
+            $this->exportCustomers();
+            $this->exportOrders();
 
-            if (!$this->productExporter->getSuccess()) {
+            if (!$this->productExporter->getSuccessOnComponentExport()) {
                 $this->logger->info('BxIndexLog: No Products found for account: ' . $account);
                 $this->logger->info('BxIndexLog: Finished account: ' . $account);
             } else {
@@ -111,11 +109,11 @@ class ExporterService
 
             $this->logger->info("BxIndexLog: End of Boxalino {$this->getType()} data sync on account {$account}");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_SUCCESS, $this->getAccount());
-            $this->logger->info("BxIndexLog: Log boxalino_exports {$this->getType()} data sync end for account {$account}");
+            $this->logger->info("BxIndexLog: Log Boxalino_exports {$this->getType()} data sync end for account {$account}");
         } catch(\Throwable $e) {
             $this->logger->info("BxIndexLog: failed with exception: " . $e->getMessage());
 
-            $this->logger->info("BxIndexLog: Log boxalino_exports {$this->getType()} data sync end for account {$account}");
+            $this->logger->info("BxIndexLog: Log Boxalino_exports {$this->getType()} data sync end for account {$account}");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_FAIL, $this->getAccount());
             $systemMessages[] = "BxIndexLog: failed with exception: ". $e->getMessage();
 
@@ -126,19 +124,7 @@ class ExporterService
     }
 
 
-    /**
-     * Exporting products and product elements (tags, manufacturers, category, prices, reviews, etc)
-     */
-    public function exportProducts()
-    {
-        $this->productExporter->setAccount($this->getAccount())
-            ->setFiles($this->getFiles())
-            ->setLibrary($this->getLibrary())
-            ->setIsDelta(!$this->getIsFull())
-            ->setType($this->getType());
 
-        $this->productExporter->export();
-    }
 
     /**
      * Get the last export time for the account (used for deltas)
@@ -163,7 +149,7 @@ class ExporterService
     {
         $this->logger->info("BxIndexLog: Initialize files for account: {$this->getAccount()}");
 
-        $this->fileHandler->setAccount($this->getAccount())
+        $this->getFiles()->setAccount($this->getAccount())
             ->setType($this->getType())
             ->setMainDir($this->getDirectory())
             ->init();
@@ -178,7 +164,7 @@ class ExporterService
 
         $this->getLibrary()->setAccount($this->getAccount())
             ->setPassword($this->configurator->getAccountPassword($this->getAccount()))
-            ->setIsDelta($this->getDelta())
+            ->setIsDelta(!$this->getIsFull())
             ->setUseDevIndex($this->configurator->useDevIndex($this->getAccount()))
             ->setLanguages($this->configurator->getAccountLanguages($this->getAccount())); #@TODO CREATE ACCESSOR FOR LANGUAGES
     }
@@ -259,17 +245,48 @@ class ExporterService
     }
 
     /**
-     * export other components (orders, customers)
+     * Exporting products and product elements (tags, manufacturers, category, prices, reviews, etc)
      */
-    public function exportOthers() : void
+    public function exportProducts()
     {
-        if($this->getType() == ExporterScheduler::BOXALINO_EXPORTER_TYPE_FULL)
+        try{
+            $this->productExporter->setAccount($this->getAccount())
+                ->setFiles($this->getFiles())
+                ->setLibrary($this->getLibrary())
+                ->setIsDelta(!$this->getIsFull())
+                ->export();
+        } catch(\Exception $exc)
         {
-            $this->transactionExporter->setFiles($this->getFiles())->setAccount($this->getAccount())->setConfig($this->configurator);
-            $this->transactionExporter->export();
+            throw $exc;
+        }
 
-            $this->customerExporter->setFiles($this->getFiles())->setAccount($this->getAccount())->setConfig($this->configurator);
-            $this->customerExporter->export();
+    }
+
+    /**
+     * Export customer data
+     */
+    public function exportCustomers() : void
+    {
+        if($this->getIsFull())
+        {
+            $this->customerExporter->setFiles($this->getFiles())
+                ->setAccount($this->getAccount())
+                ->setLibrary($this->getLibrary())
+                ->export();
+        }
+    }
+
+    /**
+     * Export order data
+     */
+    public function exportOrders() : void
+    {
+        if($this->getIsFull())
+        {
+            $this->transactionExporter->setFiles($this->getFiles())
+                ->setAccount($this->getAccount())
+                ->setLibrary($this->getLibrary())
+                ->export();
         }
     }
 
@@ -332,7 +349,7 @@ class ExporterService
      */
     public function getFiles() : FileHandler
     {
-        return $this->files;
+        return $this->fileHandler;
     }
 
     /**

@@ -55,14 +55,15 @@ class ComponentResource
      * @param array $tables
      * @return mixed[]
      */
-    public function getPropertiesByTableList(array $tables)
+    public function getPropertiesByTableList(array $tables) : array
     {
+        $database = $this->connection->getDatabase();
         $query = $this->connection->createQueryBuilder();
         $query->select(['COLUMN_NAME', 'TABLE_NAME'])
             ->from('information_schema.columns')
             ->andWhere('information_schema.columns.TABLE_SCHEMA = :database')
             ->andWhere('information_schema.columns.TABLE_NAME IN (:tables)')
-            ->setParameter("database", $this->connection->getDatabase(), ParameterType::STRING)
+            ->setParameter("database", $database, ParameterType::STRING)
             ->setParameter("tables", implode(",", $tables), ParameterType::STRING);
 
         return $query->execute()->fetchAll();

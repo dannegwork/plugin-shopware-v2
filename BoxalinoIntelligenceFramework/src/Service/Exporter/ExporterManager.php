@@ -76,7 +76,7 @@ abstract class ExporterManager
      * @return bool
      * @throws \Exception
      */
-    public function run()
+    public function export()
     {
         $accounts = $this->getAccounts();
         if(empty($accounts))
@@ -90,6 +90,7 @@ abstract class ExporterManager
         $exporterHasRun = false;
         foreach($accounts as $account)
         {
+            $this->logger->info($account);
             try{
                 if($this->exportAllowedByAccount($account))
                 {
@@ -98,8 +99,9 @@ abstract class ExporterManager
                         ->setAccount($account)
                         ->setType($this->getType())
                         ->setExporterId($this->getExporterId())
-                        ->setIsFull($this->getExportFull())
+                        ->setIsFull($this->getType() == ExporterScheduler::BOXALINO_EXPORTER_TYPE_FULL)
                         ->setTimeout($this->getTimeout($account))
+                        ->setDirectory("var/files/")
                         ->export();
                 }
             } catch (\Exception $exception) {

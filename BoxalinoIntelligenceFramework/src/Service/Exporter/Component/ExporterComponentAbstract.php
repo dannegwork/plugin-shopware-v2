@@ -5,6 +5,7 @@ use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Query\QueryBuilder;
 use \Psr\Log\LoggerInterface;
 
 /**
@@ -16,6 +17,11 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     CONST EXPORTER_COMPONENT_ID_FIELD = "";
     CONST EXPORTER_COMPONENT_MAIN_FILE = "";
     const EXPORTER_COMPONENT_TYPE = "";
+
+    /**
+     * @var bool
+     */
+    protected $successOnComponentExport = false;
 
     /**
      * @var Configuration
@@ -152,6 +158,18 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
     }
 
     /**
+     * @param $query
+     * @return \Generator
+     */
+    public function processExport(QueryBuilder $query)
+    {
+        foreach($query->execute()->fetchAll() as $row)
+        {
+            yield $row;
+        }
+    }
+
+    /**
      * @param string $table
      * @return array
      * @throws \Doctrine\DBAL\DBALException
@@ -271,7 +289,8 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      */
     public function getComponent()
     {
-        return self::EXPORTER_COMPONENT_TYPE;
+        $callingClass = get_called_class();
+        return $callingClass::EXPORTER_COMPONENT_TYPE;
     }
 
     /**
@@ -281,7 +300,8 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      */
     public function getComponentMainFile()
     {
-        return self::EXPORTER_COMPONENT_MAIN_FILE;
+        $callingClass = get_called_class();
+        return $callingClass::EXPORTER_COMPONENT_MAIN_FILE;
     }
 
     /**
@@ -290,7 +310,25 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      */
     public function getComponentIdField()
     {
-        return self::EXPORTER_COMPONENT_ID_FIELD;
+        $callingClass = get_called_class();
+        return $callingClass::EXPORTER_COMPONENT_ID_FIELD;
     }
 
+    /**
+     * @param bool $value
+     * @return ExporterComponentAbstract
+     */
+    public function setSuccessOnComponentExport(bool $value) : ExporterComponentAbstract
+    {
+        $this->successOnComponentExport = $value;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getSuccessOnComponentExport()
+    {
+        return $this->successOnComponentExport;
+    }
 }

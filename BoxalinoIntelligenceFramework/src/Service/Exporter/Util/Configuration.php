@@ -2,9 +2,11 @@
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Util;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\ConfigJsonField;
 
 class Configuration
@@ -50,7 +52,7 @@ class Configuration
     protected $indexConfig = array();
 
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
@@ -63,7 +65,7 @@ class Configuration
     public function __construct(
         Connection $connection,
         SystemConfigService $systemConfigService,
-        \Psr\Log\LoggerInterface $logger
+        LoggerInterface $logger
     ) {
         $this->connection = $connection;
         $this->systemConfigService = $systemConfigService;
@@ -87,23 +89,29 @@ class Configuration
     public function getPluginConfigByChannelId($id)
     {
         $allConfig = $this->systemConfigService->all($id);
+        $this->logger->debug(json_encode($allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config']));
         return $allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config'];
     }
 
+    /**
+     * @param $config
+     * @param $channel
+     * @return array
+     */
     public function validateChannelConfig($config, $channel)
     {
-        if($config['status']!=1 || !(bool)$config['status'])
+        if(!(bool)$config['status'])
         {
             return [];
         }
 
-        if (empty($config['account'] || $config['password']))
+        if (empty($config['account']) || empty($config['password']))
         {
             $this->logger->info("BoxalinoIntelligenceFramework:: Account not found on channel $channel; Plugin Configurations skipped.");
             return [];
         }
 
-        if (!(bool)$config['export'] || $config['export'] != 1)
+        if (!(bool)$config['export'])
         {
             $this->logger->info("BoxalinoIntelligenceFramework:: Exporter disabled on channel $channel; Plugin Configurations skipped.");
             return [];
@@ -127,12 +135,12 @@ class Configuration
         $query = $this->connection->createQueryBuilder();
         $query->select([
             'LOWER(HEX(sales_channel.id)) as sales_channel_id',
-            'sales_channel.language_id AS sales_channel_default_language_id',
-            'sales_channel.currency_id AS sales_channel_default_currency_id',
-            'sales_channel.customer_group_id as sales_channel_customer_group_id',
-            'channel.name as sales_channel_name',
-            "GROUP_CONCAT(SUBSTR(locale.code, 0, 2) SEPARATOR ',') as sales_channel_languages_locale",
-            "GROUP_CONCAT(language.id SEPARATOR ',') as sales_channel_languages_id",
+            'LOWER(HEX(sales_channel.language_id)) AS sales_channel_default_language_id',
+            'LOWER(HEX(sales_channel.currency_id)) AS sales_channel_default_currency_id',
+            'LOWER(HEX(sales_channel.customer_group_id)) as sales_channel_customer_group_id',
+            'ANY_VALUE(channel.name) as sales_channel_name',
+            "GROUP_CONCAT(SUBSTR(locale.code, 1, 2) SEPARATOR ',') as sales_channel_languages_locale",
+            "GROUP_CONCAT(LOWER(HEX(language.id)) SEPARATOR ',') as sales_channel_languages_id",
             'LOWER(HEX(sales_channel.navigation_category_id)) as sales_channel_navigation_category_id',
             'LOWER(HEX(sales_channel.navigation_category_version_id)) as sales_channel_navigation_category_version_id'
         ])
@@ -162,9 +170,9 @@ class Configuration
                 'language.locale_id = locale.id'
             )
             ->addGroupBy('sales_channel.id')
-            ->andWhere('active = 1')
-            ->andWhere('type_id = :type')
-            ->setParameter('type', Uuid::fromHexToBytes(Defaults::SALES_CHANNEL_TYPE_STOREFRONT));
+            ->andWhere('sales_channel.active = 1')
+            ->andWhere('sales_channel.type_id = :type')
+            ->setParameter('type', Uuid::fromHexToBytes(Defaults::SALES_CHANNEL_TYPE_STOREFRONT), ParameterType::BINARY);
 
         return $query->execute()->fetchAll();
     }
@@ -497,6 +505,7 @@ class Configuration
     {
         if(sizeof($includes) > 0) {
             foreach($includes as $incl) {
+                if(empty($incl)) { continue; }
                 if(!in_array($incl, $allProperties)) {
                     throw new \Exception("BoxalinoIntelligenceFramework: Exporter Configuration: Requested include property $incl which is not part of all the properties provided");
                 }
@@ -510,10 +519,10 @@ class Configuration
 
         foreach($excludes as $excl) {
             if(!in_array($excl, $allProperties)) {
-                throw new \Exception("BoxalinoIntelligenceFramework: Exporter Configuration: Requested exclude property $excl which is not part of all the properties provided");
+                $this->logger->info("BoxalinoIntelligenceFramework: Exporter Configuration: Requested exclude property $excl which is not part of all the properties provided");
             }
             if(in_array($excl, $requiredProperties)) {
-                throw new \Exception("BoxalinoIntelligenceFramework: Exporter Configuration: Requested exclude property $excl which is part of the required properties and therefore cannot be excluded");
+                $this->logger->info("BoxalinoIntelligenceFramework: Exporter Configuration: Requested exclude property $excl which is part of the required properties and therefore cannot be excluded");
             }
         }
 
