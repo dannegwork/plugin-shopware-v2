@@ -15,6 +15,8 @@ use Shopware\Core\Defaults;
 
 /**
  * Class Price
+ * @TODO Shopware\Core\System\SalesChannel\Context\SalesChannelContextService must be used for the context service; not the decorator
+ *
  * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
  */
 class Price extends ItemsAbstract

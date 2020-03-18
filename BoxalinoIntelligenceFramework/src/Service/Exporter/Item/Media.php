@@ -13,7 +13,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
- * Class Images
+ * Class Media
  * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
  */
 class Media extends ItemsAbstract
