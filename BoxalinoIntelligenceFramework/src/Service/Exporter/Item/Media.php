@@ -6,9 +6,13 @@ use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Content\Media\DataAbstractionLayer\MediaRepositoryDecorator;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Content\Media\MediaEntity;
 use Shopware\Core\Content\Media\Pathname\UrlGeneratorInterface;
 use Shopware\Core\Defaults;
+use Shopware\Core\Framework\Context;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Shopware\Core\Framework\Uuid\Uuid;
 
@@ -27,13 +31,34 @@ class Media extends ItemsAbstract
      */
     protected $mediaUrlGenerator;
 
+    /**
+     * @var MediaRepository
+     */
+    protected $mediaRepository;
+
+    /**
+     * @var Context
+     */
+    protected $context;
+
+    /**
+     * Media constructor.
+     * @param Connection $connection
+     * @param LoggerInterface $logger
+     * @param Configuration $exporterConfigurator
+     * @param UrlGeneratorInterface $generator
+     * @param MediaRepositoryDecorator $mediaRepository
+     */
     public function __construct(
         Connection $connection,
         LoggerInterface $logger,
         Configuration $exporterConfigurator,
-        UrlGeneratorInterface $generator
+        UrlGeneratorInterface $generator,
+        EntityRepositoryInterface $mediaRepository
     ){
+        $this->mediaRepository = $mediaRepository;
         $this->mediaUrlGenerator = $generator;
+        $this->context = Context::createDefaultContext();
         parent::__construct($connection, $logger, $exporterConfigurator);
     }
 
@@ -44,7 +69,7 @@ class Media extends ItemsAbstract
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
             $query = $this->connection->createQueryBuilder();
-            $query->select(["GROUP_CONCAT(LOWER(HEX(product_media.id)) ORDER BY product_media.position SEPARATOR '|') AS value", "product_media.product_id"])
+            $query->select($this->getRequiredFields())
                 ->from("product_media")
                 ->andWhere('product_media.product_version_id = :live')
                 ->andWhere('product_media.version_id = :live')
@@ -69,8 +94,8 @@ class Media extends ItemsAbstract
                 $images = explode('|', $row['value']);
                 foreach ($images as $index => $image)
                 {
-                    $media = new MediaEntity();
-                    $media->setId($image);
+                    /** @var MediaEntity $media */
+                    $media = $this->mediaRepository->search(new Criteria([$image]), $this->context)->get($image);
                     $images[$index] = $this->mediaUrlGenerator->getAbsoluteMediaUrl($media);
                 }
                 $row['value'] = implode('|', $images);
@@ -91,22 +116,10 @@ class Media extends ItemsAbstract
         {
             $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
             $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), 'value');
-            $this->getLibrary()->addFieldParameter($attributeSourceKey,$this->getPropertyName(), 'splitValues', '|');
+            $this->getLibrary()->addFieldParameter($attributeSourceKey, $this->getPropertyName(), 'splitValues', '|');
         }
 
         $this->logger->info("BxIndexLog: Preparing products - END MEDIA.");
-    }
-
-    /**
-     * @param $query
-     * @return \Generator
-     */
-    public function processExport(QueryBuilder $query)
-    {
-        foreach($query->execute()->fetchAll() as $row)
-        {
-            yield $row;
-        }
     }
 
     /**
@@ -114,6 +127,6 @@ class Media extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ['product_media.product_id', 'media.value'];
+        return ["GROUP_CONCAT(LOWER(HEX(product_media.media_id)) ORDER BY product_media.position SEPARATOR '|') AS value", "LOWER(HEX(product_media.product_id)) AS product_id"];
     }
 }

@@ -64,6 +64,6 @@ class Visibility extends ItemsAbstract
 
     public function getRequiredFields(): array
     {
-        return ['visibility as value', 'product_id'];
+        return ['visibility as value', 'LOWER(HEX(product_id)) AS product_id'];
     }
 }

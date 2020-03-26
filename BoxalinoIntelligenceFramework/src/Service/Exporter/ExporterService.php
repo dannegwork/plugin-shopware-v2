@@ -109,11 +109,12 @@ class ExporterService
 
             $this->logger->info("BxIndexLog: End of Boxalino {$this->getType()} data sync on account {$account}");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_SUCCESS, $this->getAccount());
-            $this->logger->info("BxIndexLog: Log Boxalino_exports {$this->getType()} data sync end for account {$account}");
+            $this->logger->info("BxIndexLog: Save Boxalino_exports {$this->getType()} data sync end for account {$account}");
         } catch(\Throwable $e) {
-            $this->logger->info("BxIndexLog: failed with exception: " . $e->getMessage());
+            $this->logger->error("BxIndexLog: failed with exception: " . $e->getMessage());
+            $this->logger->error($e->getTraceAsString());
 
-            $this->logger->info("BxIndexLog: Log Boxalino_exports {$this->getType()} data sync end for account {$account}");
+            $this->logger->info("BxIndexLog: Save Boxalino_exports {$this->getType()} failed data sync end for account {$account}");
             $this->scheduler->updateScheduler(date("Y-m-d H:i:s"), $this->getType(), ExporterScheduler::BOXALINO_EXPORTER_STATUS_FAIL, $this->getAccount());
             $systemMessages[] = "BxIndexLog: failed with exception: ". $e->getMessage();
 
@@ -121,25 +122,6 @@ class ExporterService
         }
 
         $this->logger->info("BxIndexLog: End of Boxalino {$this->getType()} data sync on account {$account}");
-    }
-
-
-
-
-    /**
-     * Get the last export time for the account (used for deltas)
-     *
-     * @return string|null
-     */
-    protected function getLastExport()
-    {
-        if(is_null($this->lastExport))
-        {
-            $this->lastExport = $this->scheduler->getLastExportByAccountType($this->getAccount(), $this->getType());
-            #$this->lastExport = $this->scheduler->getLastSuccessfulExportByAccount($this->getAccount());
-        }
-
-        return $this->lastExport;
     }
 
     /**
@@ -189,14 +171,13 @@ class ExporterService
      * @return bool|string
      * @throws \Exception
      */
-    protected function prepareXmlConfigurations() : string
+    protected function prepareXmlConfigurations() : void
     {
         if (!$this->getIsFull())
         {
-            return false;
+            return;
         }
 
-        $this->logger->info('BxIndexLog: Prepare the final files: ' . $this->getAccount());
         $this->logger->info('BxIndexLog: Prepare XML configuration file: ' . $this->getAccount());
 
         try {
@@ -219,7 +200,7 @@ class ExporterService
         if($this->configurator->publishConfigurationChanges($this->getAccount()))
         {
             $changes = $this->getLibrary()->publishChanges();
-            if (sizeof($changes['changes']) > 0) {
+            if (!empty($changes) && sizeof($changes['changes']) > 0) {
                 $this->logger->info("BxIndexLog: changes in configuration detected and published for account " . $this->getAccount());
             }
             if(isset($changes['token']))
@@ -234,7 +215,7 @@ class ExporterService
     /**
      * @return array|string
      */
-    protected function pushToDI() :string
+    protected function pushToDI() : void
     {
         $this->logger->info('BxIndexLog: pushing to DI for account: ' . $this->getAccount());
         try {
@@ -271,7 +252,7 @@ class ExporterService
         {
             $this->customerExporter->setFiles($this->getFiles())
                 ->setAccount($this->getAccount())
-                ->setLibrary($this->getLibrary())
+                ->setLibrary($this->productExporter->getLibrary())
                 ->export();
         }
     }
@@ -285,7 +266,7 @@ class ExporterService
         {
             $this->transactionExporter->setFiles($this->getFiles())
                 ->setAccount($this->getAccount())
-                ->setLibrary($this->getLibrary())
+                ->setLibrary($this->customerExporter->getLibrary())
                 ->export();
         }
     }

@@ -17,7 +17,7 @@ class Manufacturer extends ItemsAbstract
     public function export()
     {
         $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER EXPORT.");
-        $fields = array_merge($this->getLanguageHeaders(), ['manufacturer.product_manufacturer_id']);
+        $fields = array_merge($this->getLanguageHeaders(), ['LOWER(HEX(manufacturer.product_manufacturer_id)) AS product_manufacturer_id']);
 
         $query = $this->connection->createQueryBuilder();
         $query->select($fields)
@@ -31,12 +31,13 @@ class Manufacturer extends ItemsAbstract
             return;
         }
         $data = $query->execute()->fetchAll();
-        if (count($data) > 0) {
+        if (count($data) > 0)
+        {
             $data = array_merge(array(array_keys(end($data))), $data);
+            $this->getFiles()->savePartToCsv($this->getItemMainFile(), $data);
+            $this->exportItemRelation();
         }
-        $this->getFiles()->savePartToCsv($this->getItemMainFile(), $dataSegment);
 
-        $this->exportItemRelation();
         $this->logger->info("BxIndexLog: Preparing products - END MANUFACTURER.");
     }
 
@@ -44,8 +45,6 @@ class Manufacturer extends ItemsAbstract
     {
         $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER RELATIONS EXPORT.");
         $totalCount = 0; $page = 1; $header = true; $success = true;
-        $rootCategoryId = $this->config->getChannelRootCategoryId($this->getAccount());
-
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
             $query = $this->connection->createQueryBuilder();
@@ -54,9 +53,9 @@ class Manufacturer extends ItemsAbstract
                 ->andWhere('p.version_id = :live')
                 ->andWhere('p.product_manufacturer_version_id = :live')
                 ->andWhere("JSON_SEARCH(p.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
-                ->addGroupBy('p.product_id')
+                ->addGroupBy('p.id')
                 ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                ->setParameter('channelRootCategoryId', $rootCategoryId, ParameterType::STRING)
+                ->setParameter('channelRootCategoryId', $this->getRootCategoryId(), ParameterType::STRING)
                 ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
                 ->setMaxResults(Product::EXPORTER_STEP);
 
@@ -64,6 +63,7 @@ class Manufacturer extends ItemsAbstract
             $totalCount += $count;
             if ($totalCount == 0) {
                 if($page==1) {
+                    $this->logger->info("BxIndexLog: PRODUCTS EXPORT: No data found for MANUFACTURERS.");
                     $success = false;
                 }
                 break;
@@ -108,6 +108,6 @@ class Manufacturer extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ['p.id AS product_id', 'p.product_manufacturer_id'];
+        return ['LOWER(HEX(p.id)) AS product_id', 'LOWER(HEX(p.product_manufacturer_id)) AS product_manufacturer_id'];
     }
 }

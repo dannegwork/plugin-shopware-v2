@@ -1,6 +1,7 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+use Doctrine\DBAL\ParameterType;
 use Shopware\Core\Defaults;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Shopware\Core\Framework\Uuid\Uuid;
@@ -31,19 +32,18 @@ class Category extends ItemsAbstract
     public function exportMain()
     {
         $this->logger->info("BxIndexLog: Preparing products - START CATEGORIES EXPORT.");
-
-        $channelRootCategory = $this->config->getChannelRootCategoryId($this->getAccount());
+        $rootCategoryId = $this->getRootCategoryId();
         $query = $this->connection->createQueryBuilder();
         $query->select($this->getRequiredFields())
             ->from("category")
             ->leftJoin('category', '( ' . $this->getLocalizedFieldsQuery()->__toString() . ') ',
                 'translations', 'translations.category_id = category.id AND category.version_id = translations.category_version_id')
-            ->leftJoin('category', '( ' . $this->getTags()->__toString() . ' )', 'category_tags',
+            ->leftJoin('category', '( ' . $this->getTagsQuery()->__toString() . ' )', 'category_tags',
                 'category_tags.category_id = category.id AND category_tags.category_version_id = category.version_id')
-            ->andWhere('category.path LIKE "|:rootCategoryId|"')
+            ->andWhere('category.path LIKE  :rootCategoryId')
             ->andWhere('category.version_id = :live')
-            ->setParameter('rootCategoryId', $channelRootCategory)
-            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION));
+            ->setParameter('rootCategoryId', "%|$rootCategoryId|%", ParameterType::STRING)
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY);
 
         $data = $query->execute()->fetchAll();
         if (count($data) > 0)
@@ -67,7 +67,10 @@ class Category extends ItemsAbstract
      */
     protected function getLocalizedFieldsQuery() : QueryBuilder
     {
-        return $this->getLocalizedFields('category_translation', 'category_id', 'category_id', 'category_version_id','name', ['category_translation.category_id', 'category_translation.category_version_id']);
+        return $this->getLocalizedFields('category_translation', 'category_id', 'category_id',
+            'category_version_id','name',
+            ['category_translation.category_id', 'category_translation.category_version_id']
+        );
     }
 
     /**
@@ -76,7 +79,7 @@ class Category extends ItemsAbstract
      * @return \Doctrine\DBAL\Query\QueryBuilder
      * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
      */
-    public function getTags() : QueryBuilder
+    public function getTagsQuery() : QueryBuilder
     {
         $query = $this->connection->createQueryBuilder();
         $query->select([
@@ -98,23 +101,25 @@ class Category extends ItemsAbstract
     public function exportRelation()
     {
         $this->logger->info("BxIndexLog: Preparing products - START CATEGORIES RELATION EXPORT.");
-        $channelRootCategory = $this->config->getChannelRootCategoryId($this->getAccount());
+        $rootCategoryId = $this->getRootCategoryId();
         $query = $this->connection->createQueryBuilder();
-        $query->select(['category.id AS category_id', 'product_category_tree.product_id AS product_id'])
-            ->from('category')
-            ->rightJoin('category', 'product_category_tree', 'product_category_tree',
+        $query->select(['LOWER(HEX(product_category_tree.category_id)) AS category_id', 'LOWER(HEX(product_category_tree.product_id)) AS product_id'])
+            ->from('product_category_tree')
+            ->leftJoin('product_category_tree', 'category', 'category',
                 'product_category_tree.category_id = category.id AND product_category_tree.category_version_id = category.version_id'
             )
-            ->andWhere('category.path LIKE "|:rootCategoryId|"')
+            ->andWhere('category.path LIKE :rootCategoryId')
             ->andWhere('category.version_id = :live')
             ->andWhere('product_category_tree.product_version_id = :live')
-            ->setParameter('rootCategoryId', $channelRootCategory)
-            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION));
+            ->setParameter('rootCategoryId', "%|$rootCategoryId|%", ParameterType::STRING)
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY);
 
+        /**
         if ($this->getExportedProductIds()) {
-            $query->andWhere("product_category_tree.product_id IN (:productIds)")
+            $query->andWhere("LOWER(HEX(product_category_tree.product_id)) IN (:productIds)")
                 ->setParameter("productIds", implode(",", $this->getExportedProductIds()));
         }
+         */
 
         $data = $query->execute()->fetchAll();
         if (count($data) > 0) {
@@ -144,4 +149,5 @@ class Category extends ItemsAbstract
             ]
         );
     }
+
 }

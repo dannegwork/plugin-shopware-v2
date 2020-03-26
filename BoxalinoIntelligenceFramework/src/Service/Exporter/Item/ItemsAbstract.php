@@ -15,9 +15,6 @@ use Shopware\Core\Framework\Uuid\Uuid;
 
 abstract class ItemsAbstract implements ExporterInterface
 {
-    CONST EXPORTER_COMPONENT_ITEM_NAME = "";
-    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = '';
-    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = '';
 
     /**
      * @var FileHandler
@@ -79,12 +76,24 @@ abstract class ItemsAbstract implements ExporterInterface
     }
 
     /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getRootCategoryId() : string
+    {
+        return $this->config->getChannelRootCategoryId($this->getAccount());
+    }
+
+    /**
      * @return array
      * @throws \Exception
      */
     public function getLanguageHeaders() : array
     {
-        return preg_filter('/^/', 'value_',$this->config->getAccountLanguages($this->getAccount()));
+        $languages = $this->config->getAccountLanguages($this->getAccount());
+        $fields = preg_filter('/^/', 'value_', array_values($languages));
+
+        return array_combine($languages, $fields);
     }
 
     /**
@@ -96,31 +105,34 @@ abstract class ItemsAbstract implements ExporterInterface
      * @param string $idField
      * @param string $versionIdField
      * @param string $localizedFieldName
-     * @param array $selectFields
+     * @param array $groupByFields
      * @return \Doctrine\DBAL\Query\QueryBuilder
-     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
      * @throws \Exception
      */
     public function getLocalizedFields(string $mainTable, string $mainTableIdField, string $idField,
-                                       string $versionIdField, string $localizedFieldName, array $groupByFields) : QueryBuilder
-    {
+                                       string $versionIdField, string $localizedFieldName, array $groupByFields
+    ) : QueryBuilder {
         $languages = $this->config->getAccountLanguages($this->getAccount());
         $defaultLanguage = $this->config->getChannelDefaultLanguageId($this->getAccount());
-        $alias = []; $innerConditions = []; $leftConditions = []; $selectFields = $groupByFields;
+        $alias = []; $innerConditions = []; $leftConditions = []; $selectFields = array_merge($groupByFields, []);
+        $inner='inner'; $left='left';
         foreach($languages as $languageId=>$languageCode)
         {
-            $alias[$languageCode] = $mainTable . "_" . $languageCode;
-            $selectFields[] = "IF(IS_NULL($alias.$localizedFieldName), $mainTable.$localizedFieldName, $alias.$localizedFieldName) as value_$languageCode";
+            $t1 = $mainTable . "_" . $languageCode . "_" . $left;
+            $t2 = $mainTable . "_" . $languageCode . "_" . $inner;
+            $alias[$languageCode][$left] = $t1;
+            $alias[$languageCode][$inner] = $t2;
+            $selectFields[] = "IF(ANY_VALUE($t1.$localizedFieldName) IS NULL, ANY_VALUE($t2.$localizedFieldName), ANY_VALUE($t1.$localizedFieldName)) as value_$languageCode";
             $innerConditions[$languageCode] = [
-                "$mainTable.$mainTableIdField = $alias.$idField",
-                "$mainTable.$versionIdField =  $alias.$versionIdField",
-                "$mainTable.language_id = $defaultLanguage"
+                "$mainTable.$mainTableIdField = $t2.$idField",
+                "$mainTable.$versionIdField = $t2.$versionIdField",
+                "LOWER(HEX($t2.language_id)) = '$defaultLanguage'"
             ];
 
             $leftConditions[$languageCode] = [
-                "$mainTable.$mainTableIdField = $alias.$idField",
-                "$mainTable.$versionIdField = $alias.$versionIdField",
-                "$mainTable.language_id = $languageId"
+                "$mainTable.$mainTableIdField = $t1.$idField",
+                "$mainTable.$versionIdField = $t1.$versionIdField",
+                "LOWER(HEX($t1.language_id)) = '$languageId'"
             ];
         }
 
@@ -128,10 +140,10 @@ abstract class ItemsAbstract implements ExporterInterface
         $query->select($selectFields)
             ->from($mainTable);
 
-        foreach($languages as $languageId=>$languageCode)
+        foreach($languages as $languageCode)
         {
-            $query->innerJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $innerConditions[$languageCode]))
-                ->leftJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $leftConditions[$languageCode]));
+            $query->innerJoin($mainTable, $mainTable, $alias[$languageCode][$inner], implode(" AND ", $innerConditions[$languageCode]))
+                ->leftJoin($mainTable, $mainTable, $alias[$languageCode][$left], implode(" AND ", $leftConditions[$languageCode]));
         }
 
         $query->groupBy($groupByFields);
@@ -139,11 +151,24 @@ abstract class ItemsAbstract implements ExporterInterface
     }
 
     /**
+     * @param $query
+     * @return \Generator
+     */
+    public function processExport(QueryBuilder $query)
+    {
+        foreach($query->execute()->fetchAll() as $row)
+        {
+            yield $row;
+        }
+    }
+
+    /**
      * @return string
      */
     public function getItemMainFile()
     {
-        return self::EXPORTER_COMPONENT_ITEM_MAIN_FILE;
+        $callingClass = get_called_class();
+        return $callingClass::EXPORTER_COMPONENT_ITEM_MAIN_FILE;
     }
 
     /**
@@ -151,7 +176,8 @@ abstract class ItemsAbstract implements ExporterInterface
      */
     public function getItemRelationFile()
     {
-        return self::EXPORTER_COMPONENT_ITEM_RELATION_FILE;
+        $callingClass = get_called_class();
+        return $callingClass::EXPORTER_COMPONENT_ITEM_RELATION_FILE;
     }
 
     /**
@@ -168,7 +194,8 @@ abstract class ItemsAbstract implements ExporterInterface
      */
     public function getPropertyName() : string
     {
-        return self::EXPORTER_COMPONENT_ITEM_NAME;
+        $callingClass = get_called_class();
+        return $callingClass::EXPORTER_COMPONENT_ITEM_NAME;
     }
     /**
      * @return string

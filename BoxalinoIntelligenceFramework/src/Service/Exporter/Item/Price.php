@@ -52,6 +52,7 @@ class Price extends ItemsAbstract
     {
         $this->logger->info("BxIndexLog: Preparing products - START PRICE EXPORT.");
         $totalCount = 0; $page = 1; $header = true; $success = true;
+        $this->logger->info("BxIndexLog: PRICE EXPORT RULE TYPE - " . $this->cartAmmountRule->getName());
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
             $query = $this->connection->createQueryBuilder();
@@ -114,15 +115,17 @@ class Price extends ItemsAbstract
         $salesChannelContext = $this->salesChannelContextService->get($this->getChannelId(), "boxalinoexporttoken",
             $this->config->getChannelDefaultLanguageId($this->getAccount()));
         if ($salesChannelContext->getTaxState() === CartPrice::TAX_STATE_GROSS) {
+            $this->logger->info("BxIndexLog: PRICE EXPORT TYPE: " . CartPrice::TAX_STATE_GROSS);
             return [
                 'FORMAT(JSON_EXTRACT(product_price.price->>\'$.*.gross\', \'$[0]\'), 2) AS price',
-                'product_price.product_id'
+                'LOWER(HEX(product_price.product_id)) AS product_id'
             ];
         }
 
+        $this->logger->info("BxIndexLog: PRICE EXPORT TYPE: " . CartPrice::TAX_STATE_NET);
         return [
             'FORMAT(JSON_EXTRACT(product_price.price->>\'$.*.net\', \'$[0]\'), 2) AS price',
-            'product_price.product_id'
+            'LOWER(HEX(product_price.product_id)) AS product_id'
         ];
     }
 

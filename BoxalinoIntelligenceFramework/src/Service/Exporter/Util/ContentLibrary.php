@@ -1,6 +1,8 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Util;
 
+use Monolog\Logger;
+
 /**
  * Class Library
  * copy of the SDK BxData lib
@@ -78,6 +80,15 @@ class ContentLibrary
     public function setDelimiter($delimiter)
     {
         $this->delimiter = $delimiter;
+    }
+
+    protected $logger;
+    public function getLogger()
+    {
+        if(is_null($this->logger)) {
+            $this->logger = new Logger("BoxalinoContentLibrary");
+        }
+        return $this->logger;
     }
 
     public function addMainXmlItemFile($filePath, $itemIdColumn, $xPath='', $encoding = 'UTF-8', $sourceId = 'item_vals', $container = 'products', $validate=true) {
@@ -420,8 +431,8 @@ class ContentLibrary
 
         //containers
         $containers = $xml->addChild('containers');
-        foreach($this->sources as $containerName => $containerSources) {
-
+        foreach($this->sources as $containerName => $containerSources)
+        {
             $container = $containers->addChild('container');
             $container->addAttribute('id', $containerName);
             $container->addAttribute('type', $containerName);
@@ -430,8 +441,8 @@ class ContentLibrary
             $properties = $container->addChild('properties');
 
             //foreach source
-            foreach($containerSources as $sourceId => $sourceValues) {
-
+            foreach($containerSources as $sourceId => $sourceValues)
+            {
                 $source = $sources->addChild('source');
                 $source->addAttribute('id', $sourceId);
                 $source->addAttribute('type', $sourceValues['type']);
@@ -541,8 +552,8 @@ class ContentLibrary
                 }
 
                 if(isset($sourceValues['fields'])) {
-                    foreach($sourceValues['fields'] as $fieldId => $fieldValues) {
-
+                    foreach($sourceValues['fields'] as $fieldId => $fieldValues)
+                    {
                         $property = $properties->addChild('property');
                         $property->addAttribute('id', $fieldId);
                         $property->addAttribute('type', $fieldValues['type']);

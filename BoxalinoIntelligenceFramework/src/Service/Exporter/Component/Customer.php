@@ -37,7 +37,6 @@ class Customer extends ExporterComponentAbstract
      */
     public function exportComponent()
     {
-        $this->logger->debug("BxIndexLog: Customers - start collecting customers for account {$this->getAccount()}");
         $attributes = $this->getFields();
         $properties = array_merge([
             'locale.code as languagecode',
@@ -46,8 +45,7 @@ class Customer extends ExporterComponentAbstract
             'sales_channel_translation.name as shopname',
             'payment_method_translation.name as preferred_payment_method',
             'salutation_translation.display_name as salutation'
-        ], $attributes);
-
+        ], array_flip($attributes));
         $latestAddressSQL = $this->connection->createQueryBuilder()
             ->select(['MAX(order_id) as max_id', 'order_version_id AS latest_address_order_version_id', 'customer_id'])
             ->from("order_customer")
@@ -181,14 +179,17 @@ class Customer extends ExporterComponentAbstract
         $excludeFieldsFromMain = ['id','salutation_id', 'title', $this->getComponentIdField(), 'customer_id', 'country_id', 'country_state_id', 'custom_fields'];
         foreach ($attributes as $attribute)
         {
-            $this->logger->info(json_encode($attribute));
+            if (in_array($attribute['COLUMN_NAME'], $this->getExcludedProperties())) {
+                continue;
+            }
             if (in_array($attribute['COLUMN_NAME'], $excludeFieldsFromMain) && $attribute['TABLE_NAME'] != 'customer') {
                 continue;
             }
-            $attributesList[] = "{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}";
+            $attributesList["{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}"] = $attribute['COLUMN_NAME'];
         }
+
         return $attributesList;
-        #return $this->config->getAccountCustomersProperties($this->getAccount(), $attributesList, $this->getRequiredProperties(), $this->getExcludedProperties());
+        #return $this->config->getAccountCustomersProperties($this->getAccount(), $attributesList);
     }
 
     /**

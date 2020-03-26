@@ -138,7 +138,6 @@ class Product extends ExporterComponentAbstract
         $properties = $this->getFields();
         $rootCategoryId = $this->config->getChannelRootCategoryId($this->getAccount());
         $defaultLanguageId = $this->config->getChannelDefaultLanguageId($this->getAccount());
-        $channelId = $this->config->getAccountChannelId($this->getAccount());
 
         while (self::EXPORTER_LIMIT > $totalCount + self::EXPORTER_STEP)
         {
@@ -178,7 +177,7 @@ class Product extends ExporterComponentAbstract
                     $this->deltaIds[$row['id']] = $row['id'];
                 }
 
-                $this->exportedProductIds[$row['id']] = $channelId;
+                $this->exportedProductIds[] = $row['id'];
                 $row['purchasable'] = $this->getProductPurchasableValue($row);
                 $row['immediate_delivery'] = $this->getProductImmediateDeliveryValue($row);
                 $row['group_id'] = $this->getProductGroupValue($row);
@@ -239,7 +238,7 @@ class Product extends ExporterComponentAbstract
         $this->_exportExtra("reviews", $this->reviewsExporter);
         $this->_exportExtra("tags", $this->tagExporter);
         $this->_exportExtra("visibility", $this->visibilityExporter);
-       # $this->_exportExtra("productStreams", $this->streamExporter);
+       # $this->_exportExtra("stream", $this->streamExporter);
 
         if ($this->config->exportProductImages($this->getAccount()))
         {
@@ -264,10 +263,10 @@ class Product extends ExporterComponentAbstract
         $this->logger->info("BxIndexLog: Preparing products - {$step}.");
         $exporter->setAccount($this->getAccount())
             ->setFiles($this->getFiles())
+            ->setLibrary($this->getLibrary())
             ->setExportedProductIds($this->exportedProductIds);
         $exporter->export();
         $this->logger->info("BxIndexLog: {$step} exporter after memory: " . memory_get_usage(true));
-        $this->logger->info("BxIndexLog: Finished products - {$step}.");
     }
 
     /**

@@ -74,6 +74,6 @@ class Review extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ['AVG(product_review.points) AS value', 'product_review.product_id AS product_id'];
+        return ['AVG(product_review.points) AS value', 'LOWER(HEX(product_review.product_id)) AS product_id'];
     }
 }

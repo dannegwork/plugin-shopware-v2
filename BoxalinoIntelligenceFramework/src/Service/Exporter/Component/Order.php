@@ -222,7 +222,7 @@ class Order extends ExporterComponentAbstract
             'oas.company AS shipping_company', 'oas.title as shipping_title', 'oas.first_name AS shipping_first_name',
             'oas.last_name AS shipping_last_name', 'oas.street AS shipping_street', 'oas.zipcode AS shipping_zipcode',
             'oas.city AS shipping_city', 'oas.vat_id AS shipping_vat_id', 'oas.phone_number AS shipping_phone_nr',
-            'ot.amount as transaction_amount', 'ot.payment_method_id', 'pmt.name AS payment_name', '"" AS guest_id'
+            'ot.amount as transaction_amount', 'LOWER(HEX(ot.payment_method_id)) AS payment_method_id', 'pmt.name AS payment_name', '"" AS guest_id'
         ];
     }
 

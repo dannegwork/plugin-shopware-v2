@@ -58,13 +58,12 @@ class ComponentResource
     public function getPropertiesByTableList(array $tables) : array
     {
         $database = $this->connection->getDatabase();
+        $tables = "'" . implode ( "', '", $tables ) . "'";
         $query = $this->connection->createQueryBuilder();
         $query->select(['COLUMN_NAME', 'TABLE_NAME'])
             ->from('information_schema.columns')
-            ->andWhere('information_schema.columns.TABLE_SCHEMA = :database')
-            ->andWhere('information_schema.columns.TABLE_NAME IN (:tables)')
-            ->setParameter("database", $database, ParameterType::STRING)
-            ->setParameter("tables", implode(",", $tables), ParameterType::STRING);
+            ->andWhere('information_schema.columns.TABLE_SCHEMA = ' . $this->connection->quote($database))
+            ->andWhere("information_schema.columns.TABLE_NAME IN ($tables)");
 
         return $query->execute()->fetchAll();
     }

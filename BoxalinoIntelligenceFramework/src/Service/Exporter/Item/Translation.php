@@ -10,6 +10,7 @@ use Shopware\Core\Framework\Uuid\Uuid;
 /**
  * Class Translation
  * Exports public translation fields
+ * Only export the properties that have values
  *
  * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
  */
@@ -22,8 +23,9 @@ class Translation extends ItemsAbstract
         $properties = $this->getPropertyNames();
         foreach($properties as $property)
         {
+            $property = $property["COLUMN_NAME"];
             $this->logger->info("BxIndexLog: Preparing products - START $property EXPORT.");
-            $totalCount = 0; $page = 1; $data=[]; $header = true;
+            $totalCount = 0; $page = 1; $data=[]; $header = true; $success = true;
             while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
             {
                 $query = $this->connection->createQueryBuilder();
@@ -32,6 +34,7 @@ class Translation extends ItemsAbstract
                     ->leftJoin('product', '( ' . $this->getLocalizedFieldsQuery($property)->__toString() . ') ',
                         'translation', 'translation.product_id = product.id AND product.version_id = translation.product_version_id')
                     ->andWhere('product.version_id = :live')
+                    ->andWhere($this->getLanguageHeaderConditional())
                     ->addGroupBy('product.id')
                     ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
                     ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
@@ -40,6 +43,10 @@ class Translation extends ItemsAbstract
                 $count = $query->execute()->rowCount();
                 $totalCount += $count;
                 if ($totalCount == 0) {
+                    if($page==1) {
+                        $this->logger->info("BxIndexLog: PRODUCTS EXPORT: No data found for $property.");
+                        $success = false;
+                    }
                     break;
                 }
                 $data = $query->execute()->fetchAll();
@@ -56,7 +63,10 @@ class Translation extends ItemsAbstract
                 if($totalCount < Product::EXPORTER_STEP - 1) { break;}
             }
 
-            $this->registerFilesByProperty($property);
+            if($success)
+            {
+                $this->registerFilesByProperty($property);
+            }
             $this->logger->info("BxIndexLog: Preparing products - END $property.");
         }
 
@@ -107,10 +117,33 @@ class Translation extends ItemsAbstract
      * @return array
      * @throws \Exception
      */
-    function getRequiredFields(): array
+    public function getRequiredFields(): array
     {
-        $translationFields = preg_filter('/^/', 'translation.', $this->getLanguageHeaders());
-        return array_merge($translationFields,['LOWER(HEX(product.id)) AS product_id']);
+        return array_merge($this->getLanguageHeaderColumns(),['LOWER(HEX(product.id)) AS product_id']);
+    }
+
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function getLanguageHeaderColumns() : array
+    {
+        return preg_filter('/^/', 'translation.', $this->getLanguageHeaders());
+    }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    protected function getLanguageHeaderConditional() : string
+    {
+        $conditional = [];
+        foreach ($this->getLanguageHeaderColumns() as $column)
+        {
+            $conditional[]= "$column IS NOT NULL ";
+        }
+
+        return implode(" OR " , $conditional);
     }
 
     /**
@@ -143,21 +176,21 @@ class Translation extends ItemsAbstract
      * Reading from table schema the fields which are of a string data type that contain localized values/properties
      *
      * @param array $columns
-     * @return false|mixed\
+     * @return array
      */
-    protected function getTableColumnsByType(array $columns = ['COLUMN_NAME'])
+    protected function getTableColumnsByType(array $columns = ['COLUMN_NAME']) : array
     {
         $dataType = ['char','varchar','blob', 'tinyblob', 'mediumblob', 'longblob', 'enum', 'text', 'mediumtext', 'tinytext', 'longtext',  'varchar'];
+        $database = $this->connection->getDatabase();
+        $dataType = "'" . implode ( "', '", $dataType ) . "'";
         $query = $this->connection->createQueryBuilder();
         $query->select($columns)
             ->from('information_schema.columns')
-            ->andWhere('information_schema.columns.TABLE_SCHEMA = :database')
-            ->andWhere('information_schema.columns.TABLE_NAME = "product_translation"')
-            ->andWhere('information_schema.columns.DATA_TYPE IN (:type)')
-            ->setParameter("database", $this->connection->getDatabase(), ParameterType::STRING)
-            ->setParameter("type", implode(",", $dataType), ParameterType::STRING);
+            ->andWhere('information_schema.columns.TABLE_SCHEMA = ' . $this->connection->quote($database))
+            ->andWhere("information_schema.columns.DATA_TYPE IN ($dataType)")
+            ->andWhere('information_schema.columns.TABLE_NAME = "product_translation"');
 
-        return $query->execute()->fetchColumn();
+        return $query->execute()->fetchAll();
     }
 
 }

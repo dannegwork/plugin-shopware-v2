@@ -145,7 +145,6 @@ class ExporterScheduler
             ->setParameter('status', self::BOXALINO_EXPORTER_STATUS_PROCESSING);
 
         $processes = $query->execute()->fetchAll();
-        $this->logger->debug(json_encode($processes));
         if(empty($processes))
         {
             if($type == self::BOXALINO_EXPORTER_TYPE_FULL)

@@ -7,6 +7,10 @@ use Shopware\Core\Defaults;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Shopware\Core\Framework\Uuid\Uuid;
 
+/**
+ * Class Tag
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Tag extends ItemsAbstract
 {
     CONST EXPORTER_COMPONENT_ITEM_NAME = "tag";
@@ -16,26 +20,15 @@ class Tag extends ItemsAbstract
     public function export()
     {
         $this->logger->info("BxIndexLog: Preparing products - START TAG EXPORT.");
-        $totalCount = 0; $page = 1; $header = true; $success = true;
         $query = $this->connection->createQueryBuilder();
-        $query->select(["id AS tag_id", "name AS value"])
+        $query->select(["LOWER(HEX(id)) AS tag_id", "name AS value"])
             ->from("tag");
 
-        $count = $query->execute()->rowCount();
-        $totalCount += $count;
-        if ($totalCount == 0) {
-            if($page==1) {
-                $success = false;
-            }
-        }
         $data = $query->execute()->fetchAll();
-        if (count($data) > 0 && $header) {
-            $data = array_merge(array(array_keys(end($data))), $data);
-        }
-        $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $data);
-
-        if($success)
+        if (count($data) > 0)
         {
+            $data = array_merge(array(array_keys(end($data))), $data);
+            $this->getFiles()->savePartToCsv($this->getItemMainFile(), $data);
             $this->exportItemRelation();
         }
 
@@ -46,18 +39,16 @@ class Tag extends ItemsAbstract
     {
         $this->logger->info("BxIndexLog: Preparing products - START TAG RELATIONS EXPORT.");
         $totalCount = 0; $page = 1; $header = true; $success = true;
-        $rootCategoryId = $this->config->getChannelRootCategoryId($this->getAccount());
-
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
             $query = $this->connection->createQueryBuilder();
             $query->select($this->getRequiredFields())
                 ->from('product_tag')
-                ->joinLeft('product_tag', 'product', 'product', 'product_tag.product_id = product.id AND product_tag.product_version_id=product.version_id')
-                ->andWhere('p.version_id = :live')
-                ->andWhere("JSON_SEARCH(p.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
+                ->leftJoin('product_tag', 'product', 'product', 'product_tag.product_id = product.id AND product_tag.product_version_id=product.version_id')
+                ->andWhere('product.version_id = :live')
+                ->andWhere("JSON_SEARCH(product.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
                 ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                ->setParameter('channelRootCategoryId', $rootCategoryId, ParameterType::STRING)
+                ->setParameter('channelRootCategoryId', $this->getRootCategoryId(), ParameterType::STRING)
                 ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
                 ->setMaxResults(Product::EXPORTER_STEP);
 
@@ -93,6 +84,6 @@ class Tag extends ItemsAbstract
 
     public function getRequiredFields(): array
     {
-        return ['product_tag.product_id', 'product_tag.tag_id'];
+        return ['LOWER(HEX(product_tag.product_id)) AS product_id', 'LOWER(HEX(product_tag.tag_id)) AS tag_id'];
     }
 }

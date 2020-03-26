@@ -33,7 +33,10 @@ class Configuration
         "exportTransactionInclude",
         "exportTransactionExclude",
         "exportVoucherEnable",
-        "exportCronSchedule"
+        "exportCronSchedule",
+        "productsExtraTable",
+        "customersExtraTable",
+        "transactionsExtraTable"
     ];
 
     /**
@@ -89,7 +92,6 @@ class Configuration
     public function getPluginConfigByChannelId($id)
     {
         $allConfig = $this->systemConfigService->all($id);
-        $this->logger->debug(json_encode($allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config']));
         return $allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config'];
     }
 
@@ -350,6 +352,15 @@ class Configuration
         $languages = explode(",", $config['sales_channel_languages_locale']);
         $languageIds = explode(",", $config['sales_channel_languages_id']);
         return array_combine($languageIds, $languages);
+    }
+
+    /**
+     * @param string $account
+     * @return string
+     */
+    public function getExportTemporaryArchivePath(string $account)
+    {
+        return null;
     }
 
     /**

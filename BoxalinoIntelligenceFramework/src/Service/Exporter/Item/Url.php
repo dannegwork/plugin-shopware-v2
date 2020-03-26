@@ -16,7 +16,6 @@ class Url extends ItemsAbstract
     CONST EXPORTER_COMPONENT_ITEM_NAME = "seo_url";
     CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'product_seo_url.csv';
 
-
     public function export()
     {
         $this->logger->info("BxIndexLog: Preparing products - START URL EXPORT.");
@@ -63,8 +62,8 @@ class Url extends ItemsAbstract
 
         if($success)
         {
-            $sourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemMainFile()), 'product_id');
-            $this->getLibrary()->addSourceLocalizedTextField($sourceKey, $this->getPropertyName(), $this->getLanguageHeaders());
+            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemMainFile()), 'product_id');
+            $this->getLibrary()->addSourceLocalizedTextField($attributeSourceKey, $this->getPropertyName(), $this->getLanguageHeaders());
         }
     }
 
@@ -75,40 +74,10 @@ class Url extends ItemsAbstract
      */
     protected function getLocalizedFieldsQuery() : QueryBuilder
     {
-        $languages = $this->config->getAccountLanguages($this->getAccount());
-        $defaultLanguage = $this->config->getChannelDefaultLanguageId($this->getAccount());
-        $alias = []; $innerConditions = []; $leftConditions = []; $mainTable = 'seo_url';
-        $groupByFields = ['seo_url.foreign_key', 'seo_url.sales_channel_id'];
-        $selectFields = ['seo_url.sales_channel_id', 'seo_url.foreign_key'];
-        foreach($languages as $languageId=>$languageCode)
-        {
-            $alias[$languageCode] = "seo_url_" . $languageCode;
-            $selectFields[] = "IF(IS_NULL($alias.seo_path_info), $mainTable.seo_path_info, $alias.seo_path_info) as value_$languageCode";
-            $innerConditions[$languageCode] = [
-                "$mainTable.id = $alias.id",
-                "$mainTable.foreign_key = $alias.foreign_key",
-                "$mainTable.language_id = $defaultLanguage"
-            ];
-
-            $leftConditions[$languageCode] = [
-                "$mainTable.id = $alias.id",
-                "$mainTable.foreign_key = $alias.foreign_key",
-                "$mainTable.language_id = $languageId"
-            ];
-        }
-
-        $query = $this->connection->createQueryBuilder();
-        $query->select($selectFields)
-            ->from($mainTable);
-
-        foreach($languages as $languageId=>$languageCode)
-        {
-            $query->innerJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $innerConditions[$languageCode]))
-                ->leftJoin($mainTable, $mainTable, $alias[$languageCode], implode(" AND ", $leftConditions[$languageCode]));
-        }
-
-        $query->groupBy($groupByFields);
-        return $query;
+        return $this->getLocalizedFields('seo_url', 'id', 'id',
+            'foreign_key','seo_path_info',
+            ['seo_url.foreign_key', 'seo_url.sales_channel_id']
+        );
     }
 
     /**
@@ -118,7 +87,7 @@ class Url extends ItemsAbstract
     public function getRequiredFields(): array
     {
         $translationFields = preg_filter('/^/', 'seo_url.', $this->getLanguageHeaders());
-        return array_merge($translationFields, ['LOWER(HEX(product.id)) AS product_id']
-        );
+        return array_merge($translationFields, ['LOWER(HEX(product.id)) AS product_id']);
     }
+
 }
