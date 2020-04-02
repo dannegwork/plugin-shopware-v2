@@ -44,14 +44,14 @@ class Media extends ItemsAbstract
     /**
      * Media constructor.
      * @param Connection $connection
-     * @param LoggerInterface $logger
+     * @param LoggerInterface $boxalinoLogger
      * @param Configuration $exporterConfigurator
      * @param UrlGeneratorInterface $generator
      * @param MediaRepositoryDecorator $mediaRepository
      */
     public function __construct(
         Connection $connection,
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator,
         UrlGeneratorInterface $generator,
         EntityRepositoryInterface $mediaRepository
@@ -59,7 +59,7 @@ class Media extends ItemsAbstract
         $this->mediaRepository = $mediaRepository;
         $this->mediaUrlGenerator = $generator;
         $this->context = Context::createDefaultContext();
-        parent::__construct($connection, $logger, $exporterConfigurator);
+        parent::__construct($connection, $boxalinoLogger, $exporterConfigurator);
     }
 
     public function export()

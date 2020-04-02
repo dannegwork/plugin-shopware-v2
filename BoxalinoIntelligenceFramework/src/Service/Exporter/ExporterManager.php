@@ -52,31 +52,29 @@ abstract class ExporterManager
 
     /**
      * ExporterManager constructor.
-     * @param LoggerInterface $logger
+     * @param LoggerInterface $boxalinoLogger
      * @param Configuration $exporterConfigurator
      * @param \Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler $scheduler
      * @param \Boxalino\IntelligenceFramework\Service\Exporter\ExporterService $exporterService
      */
     public function __construct(
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator,
         ExporterScheduler $scheduler,
         ExporterService $exporterService
     ) {
         $this->config = $exporterConfigurator;
-        $this->logger = $logger;
+        $this->logger = $boxalinoLogger;
         $this->scheduler = $scheduler;
         $this->exporterService = $exporterService;
     }
 
 
     /**
-     * @TODO add date display by UTC and store view for latest runs/etc
-     *
      * @return bool
      * @throws \Exception
      */
-    public function export()
+    public function export() : bool
     {
         $accounts = $this->getAccounts();
         if(empty($accounts))
@@ -165,7 +163,7 @@ abstract class ExporterManager
      * @param string $account
      * @return ExporterManager
      */
-    public function setAccount(string $account) : ExporterManager
+    public function setAccount(string $account) : self
     {
         $this->account = $account;
         return $this;

@@ -25,10 +25,10 @@ class ComponentResource
      */
     public function __construct(
         Connection $connection,
-        LoggerInterface $logger
+        LoggerInterface $boxalinoLogger
     ) {
         $this->connection = $connection;
-        $this->logger = $logger;
+        $this->logger = $boxalinoLogger;
     }
 
 

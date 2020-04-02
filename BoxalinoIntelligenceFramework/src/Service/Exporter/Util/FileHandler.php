@@ -115,7 +115,7 @@ class FileHandler
      * @param $account
      * @return FileHandler
      */
-    public function setAccount(string $account) : FileHandler
+    public function setAccount(string $account) : self
     {
         $this->account = $account;
         return $this;
@@ -125,7 +125,7 @@ class FileHandler
      * @param string $type
      * @return FileHandler
      */
-    public function setType(string $type) : FileHandler
+    public function setType(string $type) : self
     {
         $this->type = $type;
         return $this;
@@ -135,7 +135,7 @@ class FileHandler
      * @param string $dirPath
      * @return FileHandler
      */
-    public function setMainDir(string $dirPath) : FileHandler
+    public function setMainDir(string $dirPath) : self
     {
         $this->_mainDir = $dirPath;
         return $this;

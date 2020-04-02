@@ -53,11 +53,11 @@ abstract class ItemsAbstract implements ExporterInterface
 
     public function __construct(
         Connection $connection,
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator
     ){
         $this->connection = $connection;
-        $this->logger = $logger;
+        $this->logger = $boxalinoLogger;
         $this->config = $exporterConfigurator;
     }
 
@@ -209,7 +209,7 @@ abstract class ItemsAbstract implements ExporterInterface
      * @param string $account
      * @return ItemsAbstract
      */
-    public function setAccount(string $account)  : ItemsAbstract
+    public function setAccount(string $account)  :self
     {
         $this->account = $account;
         return $this;
@@ -227,7 +227,7 @@ abstract class ItemsAbstract implements ExporterInterface
      * @param FileHandler $files
      * @return ItemsAbstract
      */
-    public function setFiles(FileHandler $files) : ItemsAbstract
+    public function setFiles(FileHandler $files) :self
     {
         $this->files = $files;
         return $this;
@@ -237,7 +237,7 @@ abstract class ItemsAbstract implements ExporterInterface
      * @param ContentLibrary $library
      * @return ExporterComponentAbstract
      */
-    public function setLibrary(ContentLibrary $library) : ItemsAbstract
+    public function setLibrary(ContentLibrary $library) :self
     {
         $this->library = $library;
         return $this;
@@ -263,7 +263,7 @@ abstract class ItemsAbstract implements ExporterInterface
      * @param array $ids
      * @return ItemsAbstract
      */
-    public function setExportedProductIds(array $ids) : ItemsAbstract
+    public function setExportedProductIds(array $ids) :self
     {
         $this->exportedProductIds = $ids;
         return $this;

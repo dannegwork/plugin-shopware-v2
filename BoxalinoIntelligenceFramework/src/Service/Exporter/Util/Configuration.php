@@ -7,13 +7,19 @@ use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\ConfigJsonField;
 
-class Configuration
+/**
+ * Class Configuration
+ * Exporter configuration helper
+ * Contains all the configuration data required for the exporter to be managed
+ *
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Util
+ */
+class Configuration extends \Boxalino\IntelligenceFramework\Service\Util\Configuration
 {
-
-    CONST BOXALINO_FRAMEWORK_CONFIG_KEY = "BoxalinoIntelligenceFramework";
-
+    /**
+     * @var array
+     */
     protected $exporterConfigurationFields = [
         "status",
         "account",
@@ -36,7 +42,10 @@ class Configuration
         "exportCronSchedule",
         "productsExtraTable",
         "customersExtraTable",
-        "transactionsExtraTable"
+        "transactionsExtraTable",
+        "exportDeltaFrequency",
+        "exportTimeout",
+        "exportPath"
     ];
 
     /**
@@ -45,37 +54,29 @@ class Configuration
     protected $connection;
 
     /**
-     * @var SystemConfigService
-     */
-    protected $systemConfigService;
-
-    /**
      * @var array
      */
     protected $indexConfig = array();
 
     /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-
-    /**
-     * @param Connection $connection
      * @param SystemConfigService $systemConfigService
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param \Psr\Log\LoggerInterface $boxalinoLogger
+     * @param Connection $connection
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
      */
     public function __construct(
-        Connection $connection,
         SystemConfigService $systemConfigService,
-        LoggerInterface $logger
+        LoggerInterface $boxalinoLogger,
+        Connection $connection
     ) {
+        parent::__construct($systemConfigService, $boxalinoLogger);
         $this->connection = $connection;
-        $this->systemConfigService = $systemConfigService;
-        $this->logger = $logger;
         $this->init();
     }
 
+    /**
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
     protected function init()
     {
         foreach($this->getShops() as $shopData)
@@ -87,12 +88,6 @@ class Configuration
                 $this->indexConfig[$config['account']] = array_merge($shopData, $config);
             }
         }
-    }
-
-    public function getPluginConfigByChannelId($id)
-    {
-        $allConfig = $this->systemConfigService->all($id);
-        return $allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config'];
     }
 
     /**
@@ -183,7 +178,7 @@ class Configuration
      * @param string $account
      * @throws \Exception
      */
-    public function getChannelDefaultLanguageId(string $account)
+    public function getChannelDefaultLanguageId(string $account) : string
     {
         $config = $this->getAccountConfig($account);
         return $config['sales_channel_default_language_id'];
@@ -376,15 +371,6 @@ class Configuration
 
     /**
      * @param $account
-     * @return string
-     */
-    public function getExportServer() : string
-    {
-        return 'http://di1.bx-cloud.com';
-    }
-
-    /**
-     * @param $account
      * @return bool
      * @throws \Exception
      */
@@ -406,12 +392,18 @@ class Configuration
     }
 
     /**
-     * @TODO add new param
      * @param string $account
      * @return int
+     * @throws \Exception
      */
     public function getExporterTimeout(string $account) : int
     {
+        $config = $this->getAccountConfig($account);
+        if(isset($config['exportTimeout']) && !empty($config['exportTimeout']))
+        {
+            return $config['exportTimeout'];
+        }
+
         return 300;
     }
 
@@ -439,9 +431,16 @@ class Configuration
      *
      * @param string $account
      * @return int
+     * @throws \Exception
      */
     public function getDeltaFrequencyMinInterval(string $account) : int
     {
+        $config = $this->getAccountConfig($account);
+        if(isset($config['exportDeltaFrequency']) && !empty($config['exportDeltaFrequency']))
+        {
+            return $config['exportDeltaFrequency'];
+        }
+
         return 30;
     }
 

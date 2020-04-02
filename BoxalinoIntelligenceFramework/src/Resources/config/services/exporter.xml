@@ -1,0 +1,102 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="boxalino.exporter.util.file-handler" class="Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler" />
+        <service id="boxalino.exporter.util.library" class="Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary" />
+        <service id="boxalino.exporter.util.configurator" class="Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration" parent="boxalino.util.configurator" >
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+        </service>
+
+        <service id="boxalino.exporter.scheduler" class="Boxalino\IntelligenceFramework\Service\Exporter\ExporterScheduler" >
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+        </service>
+
+        <service id="boxalino.exporter.component.resource" class="Boxalino\IntelligenceFramework\Service\Exporter\Component\ComponentResource" >
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+        </service>
+
+        <service id="boxalino.exporter.service" class="Boxalino\IntelligenceFramework\Service\Exporter\ExporterService" >
+            <argument type="service" id="boxalino.exporter.component.order"/>
+            <argument type="service" id="boxalino.exporter.component.customer"/>
+            <argument type="service" id="boxalino.exporter.component.product"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="boxalino.exporter.util.configurator"/>
+            <argument type="service" id="boxalino.exporter.util.library"/>
+            <argument type="service" id="boxalino.exporter.util.file-handler"/>
+            <argument type="service" id="boxalino.exporter.scheduler"/>
+        </service>
+
+        <service id="boxalino.exporter.full" class="Boxalino\IntelligenceFramework\Service\Exporter\ExporterFull" >
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="boxalino.exporter.util.configurator"/>
+            <argument type="service" id="boxalino.exporter.scheduler"/>
+            <argument type="service" id="boxalino.exporter.service"/>
+        </service>
+
+        <service id="boxalino.exporter.delta" class="Boxalino\IntelligenceFramework\Service\Exporter\ExporterDelta" >
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="boxalino.exporter.util.configurator"/>
+            <argument type="service" id="boxalino.exporter.scheduler"/>
+            <argument type="service" id="boxalino.exporter.service"/>
+        </service>
+
+        <service id="boxalino.exporter.component" class="Boxalino\IntelligenceFramework\Service\Exporter\Component\ExporterComponentAbstract" >
+            <argument type="service" id="boxalino.exporter.component.resource"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="boxalino.exporter.util.configurator"/>
+        </service>
+        <service id="boxalino.exporter.component.customer" class="Boxalino\IntelligenceFramework\Service\Exporter\Component\Customer" parent="boxalino.exporter.component" />
+        <service id="boxalino.exporter.component.order" class="Boxalino\IntelligenceFramework\Service\Exporter\Component\Order" parent="boxalino.exporter.component" />
+
+        <service id="boxalino.exporter.component.product" class="Boxalino\IntelligenceFramework\Service\Exporter\Component\Product" parent="boxalino.exporter.component" >
+            <argument type="service" id="boxalino.exporter.component.product.category"/>
+            <argument type="service" id="boxalino.exporter.component.product.facet"/>
+            <argument type="service" id="boxalino.exporter.component.product.media"/>
+            <argument type="service" id="boxalino.exporter.component.product.manufacturer"/>
+            <argument type="service" id="boxalino.exporter.component.product.price"/>
+            <argument type="service" id="boxalino.exporter.component.product.stream"/>
+            <argument type="service" id="boxalino.exporter.component.product.url"/>
+            <argument type="service" id="boxalino.exporter.component.product.review"/>
+            <argument type="service" id="boxalino.exporter.component.product.translation"/>
+            <argument type="service" id="boxalino.exporter.component.product.tag"/>
+            <argument type="service" id="boxalino.exporter.component.product.visibility"/>
+        </service>
+
+        <service id="boxalino.exporter.component.product.category" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Category" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.facet" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Facet" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.manufacturer" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Manufacturer" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.review" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Review" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.stream" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Stream" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.tag" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Tag" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.translation" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Translation" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.url" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Url" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.product.visibility" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Visibility" parent="boxalino.exporter.component.item" />
+        <service id="boxalino.exporter.component.item" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\ItemsAbstract" >
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="boxalino.exporter.util.configurator"/>
+        </service>
+
+        <service id="boxalino.exporter.component.product.price" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Price" parent="boxalino.exporter.component.item">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Rule\CartAmountRule"/>
+            <argument type="service" id="Shopware\Core\Profiling\Checkout\SalesChannelContextServiceProfiler"/>
+        </service>
+
+        <service id="boxalino.exporter.component.product.media" class="Boxalino\IntelligenceFramework\Service\Exporter\Item\Media" parent="boxalino.exporter.component.item">
+            <argument type="service" id="Shopware\Core\Content\Media\Pathname\UrlGeneratorInterface"/>
+            <argument type="service" id="media.repository"/>
+        </service>
+
+        <service id="Boxalino\IntelligenceFramework\Service\Exporter\ExporterCommand">
+            <argument type="service" id="boxalino.exporter.delta"/>
+            <argument type="service" id="boxalino.exporter.full"/>
+            <tag name="console.command"/>
+        </service>
+    </services>
+</container>

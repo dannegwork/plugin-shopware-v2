@@ -12,7 +12,7 @@ class Manufacturer extends ItemsAbstract
 
     CONST EXPORTER_COMPONENT_ITEM_NAME = "brand";
     CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'brand.csv';
-    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_brand.csv';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_brands.csv';
 
     public function export()
     {
@@ -95,7 +95,7 @@ class Manufacturer extends ItemsAbstract
      * @return QueryBuilder
      * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
      */
-    public function getLocalizedFieldsQuery()
+    public function getLocalizedFieldsQuery() : QueryBuilder
     {
         return $this->getLocalizedFields("product_manufacturer_translation", 'product_manufacturer_id',
             'product_manufacturer_id', 'product_manufacturer_version_id', 'name',

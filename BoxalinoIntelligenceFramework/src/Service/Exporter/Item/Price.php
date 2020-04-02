@@ -38,14 +38,14 @@ class Price extends ItemsAbstract
 
     public function __construct(
         Connection $connection,
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator,
         CartAmountRule $cartAmountRule,
         SalesChannelContextServiceProfiler $salesChannelContextService
     ){
         $this->cartAmmountRule = $cartAmountRule;
         $this->salesChannelContextService = $salesChannelContextService;
-        parent::__construct($connection, $logger, $exporterConfigurator);
+        parent::__construct($connection, $boxalinoLogger, $exporterConfigurator);
     }
 
     public function export()

@@ -162,7 +162,7 @@ class Order extends ExporterComponentAbstract
      * @return false|mixed
      * @throws \Doctrine\DBAL\DBALException
      */
-    protected function getOrderStateMachineId()
+    protected function getOrderStateMachineId() : string
     {
         return $this->connection->fetchColumn("SELECT id FROM state_machine WHERE technical_name='order.state'");
     }
@@ -171,7 +171,7 @@ class Order extends ExporterComponentAbstract
      * @return false|mixed
      * @throws \Doctrine\DBAL\DBALException
      */
-    protected function getOrderDeliveryStateMachineId()
+    protected function getOrderDeliveryStateMachineId() : string
     {
         return $this->connection->fetchColumn("SELECT id FROM state_machine WHERE technical_name='order_delivery.state'");
     }
@@ -180,7 +180,7 @@ class Order extends ExporterComponentAbstract
      * @return false|mixed
      * @throws \Doctrine\DBAL\DBALException
      */
-    protected function getOrderTransactionStateMachineId()
+    protected function getOrderTransactionStateMachineId() : string
     {
         return $this->connection->fetchColumn("SELECT id FROM state_machine WHERE technical_name='order_transaction.state'");
     }

@@ -100,7 +100,7 @@ class Product extends ExporterComponentAbstract
     public function __construct(
         ComponentResource $resource,
         Connection $connection,
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator,
         Category $categoryExporter,
         Facet $facetExporter,
@@ -126,7 +126,7 @@ class Product extends ExporterComponentAbstract
         $this->tagExporter = $tagExporter;
         $this->visibilityExporter = $visibilityExporter;
 
-        parent::__construct($resource, $connection, $logger, $exporterConfigurator);
+        parent::__construct($resource, $connection, $boxalinoLogger, $exporterConfigurator);
     }
 
 
@@ -372,7 +372,7 @@ class Product extends ExporterComponentAbstract
      * @param $row
      * @return int
      */
-    public function getProductPurchasableValue($row)
+    public function getProductPurchasableValue($row) : int
     {
         if($row['is_closeout'] == 1 && $row['stock'] == 0)
         {
@@ -389,7 +389,7 @@ class Product extends ExporterComponentAbstract
      * @param $row
      * @return int
      */
-    public function getProductImmediateDeliveryValue($row)
+    public function getProductImmediateDeliveryValue($row) : int
     {
         if($row['available_stock'] >= $row['min_purchase'])
         {

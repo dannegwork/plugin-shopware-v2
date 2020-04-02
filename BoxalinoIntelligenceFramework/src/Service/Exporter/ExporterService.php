@@ -52,7 +52,7 @@ class ExporterService
         Order $transactionExporter,
         Customer $customerExporter,
         Product $productExporter,
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator,
         ContentLibrary $library,
         FileHandler $fileHandler,
@@ -63,7 +63,7 @@ class ExporterService
         $this->productExporter = $productExporter;
 
         $this->configurator = $exporterConfigurator;
-        $this->logger = $logger;
+        $this->logger = $boxalinoLogger;
         $this->library = $library;
         $this->fileHandler = $fileHandler;
         $this->scheduler = $scheduler;
@@ -127,7 +127,7 @@ class ExporterService
     /**
      * Initializes export directory and files handler for the process
      */
-    protected function initFiles()
+    protected function initFiles() : void
     {
         $this->logger->info("BxIndexLog: Initialize files for account: {$this->getAccount()}");
 
@@ -140,7 +140,7 @@ class ExporterService
     /**
      * Initializes the xml/zip content library
      */
-    protected function initLibrary()
+    protected function initLibrary() : void
     {
         $this->logger->info("BxIndexLog: Initialize content library for account: {$this->getAccount()}");
 
@@ -155,7 +155,7 @@ class ExporterService
      * Verifies credentials to the DI
      * If the server is too busy it will trigger a timeout but the export should not be stopped
      */
-    protected function verifyCredentials()
+    protected function verifyCredentials() : void
     {
         $this->logger->info("BxIndexLog: verify credentials for account: {$this->getAccount()}");
         try {
@@ -228,7 +228,7 @@ class ExporterService
     /**
      * Exporting products and product elements (tags, manufacturers, category, prices, reviews, etc)
      */
-    public function exportProducts()
+    public function exportProducts() : void
     {
         try{
             $this->productExporter->setAccount($this->getAccount())
@@ -301,7 +301,7 @@ class ExporterService
      * @param mixed $directory
      * @return ExporterService
      */
-    public function setDirectory(string $directory) : ExporterService
+    public function setDirectory(string $directory) : self
     {
         $this->directory = $directory;
         return $this;
@@ -311,7 +311,7 @@ class ExporterService
      * @param string $value
      * @return ExporterService
      */
-    public function setType(string $value) : ExporterService
+    public function setType(string $value) : self
     {
         $this->type = $value;
         return $this;
@@ -363,7 +363,7 @@ class ExporterService
      * @param string $id
      * @return ExporterService
      */
-    public function setExporterId(string $id) : ExporterService
+    public function setExporterId(string $id) :self
     {
         $this->exporterId = $id;
         return $this;
@@ -373,7 +373,7 @@ class ExporterService
      * @param string $timeout
      * @return ExporterService
      */
-    public function setTimeout(string $timeout) : ExporterService
+    public function setTimeout(string $timeout) :self
     {
         $this->timeout = $timeout;
         return $this;

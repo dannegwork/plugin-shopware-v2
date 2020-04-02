@@ -74,19 +74,19 @@ abstract class ExporterComponentAbstract implements ExporterComponentInterface
      *
      * @param ComponentResource $resource
      * @param Connection $connection
-     * @param LoggerInterface $logger
+     * @param LoggerInterface $boxalinoLogger
      * @param Configuration $exporterConfigurator
      */
     public function __construct(
         ComponentResource $resource,
         Connection $connection,
-        LoggerInterface $logger,
+        LoggerInterface $boxalinoLogger,
         Configuration $exporterConfigurator
     ){
         $this->resource = $resource;
         $this->connection = $connection;
         $this->config = $exporterConfigurator;
-        $this->logger = $logger;
+        $this->logger = $boxalinoLogger;
     }
 
     abstract function exportComponent();
