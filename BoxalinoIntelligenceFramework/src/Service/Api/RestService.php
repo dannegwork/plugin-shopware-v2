@@ -44,31 +44,28 @@ class RestService
         $this->config = $config;
     }
 
-    public function request(): void
+    /**
+     * @return string|null
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function request(): ?string
     {
         try {
-            $body = $this->requestService->get();
             $request = new Request(
                 'POST',
                 $this->config->getRestApiEndpoint(),
                 ['Content-Type' => 'application/json'],
-                $body
+                $this->requestService->get()
             );
-            $this->logger->info("====================== body =======================");
-            $this->logger->info($body);
-
             $response = $this->restClient->send($request);
 
-            $jsonResponse = $response->getBody()->getContents();
-            $this->logger->info("====================== response =======================");
-            $this->logger->info($jsonResponse);
-
-            return $response;
+            return $response->getBody()->getContents();
         } catch (\Exception $exception)
         {
             $this->logger->error($exception->getMessage());
         }
 
+        return null;
     }
 
 }

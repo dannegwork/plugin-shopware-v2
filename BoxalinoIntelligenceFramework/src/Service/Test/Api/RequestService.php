@@ -6,7 +6,7 @@ use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FilterDefinitio
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\HeaderParameterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\UserParameterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\ParameterFactory;
-use Boxalino\IntelligenceFramework\Service\Api\Request\RequestFactory;
+use Boxalino\IntelligenceFramework\Service\Api\RequestFactory;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\SortingDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Util\Configuration;
 use GuzzleHttp\Client;

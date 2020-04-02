@@ -41,7 +41,9 @@ class ParameterDefinition implements ParameterInterface
      */
     public function toArray() : array
     {
-        return get_object_vars($this);
+        $vars = get_object_vars($this);
+        unset($vars["logger"]);
+        return $vars;
     }
 
 }

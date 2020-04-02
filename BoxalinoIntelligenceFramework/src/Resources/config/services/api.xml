@@ -19,7 +19,7 @@
         <service id="boxalino.api.request.parameter.user" class="Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\UserParameterDefinition" parent="boxalino.api.request.parameter.definition" public="true" shared="false"/>
         <service id="boxalino.api.request.parameter.header" class="Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\HeaderParameterDefinition" parent="boxalino.api.request.parameter.definition" public="true" shared="false"/>
         <service id="boxalino.api.request.parameter.item" class="Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\ItemDefinition" parent="boxalino.api.request.parameter.definition" public="true" shared="false"/>
-        <service id="boxalino.api.request.factory" class="Boxalino\IntelligenceFramework\Service\Api\Request\RequestFactory"/>
+        <service id="boxalino.api.request.factory" class="Boxalino\IntelligenceFramework\Service\Api\RequestFactory"/>
 
         <!-- TEST -->
         <service id="boxalino.test.api.request" class="Boxalino\IntelligenceFramework\Service\Test\Api\RequestService">

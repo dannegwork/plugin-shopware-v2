@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Boxalino\IntelligenceFramework\Service\Api\Request;
+namespace Boxalino\IntelligenceFramework\Service\Api;
 
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FacetDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FilterDefinition;
@@ -118,11 +118,6 @@ class RequestFactory implements \JsonSerializable
     protected $parameters = [];
 
     /**
-     * @var array
-     */
-    protected $items = [];
-
-    /**
      * @param FilterDefinition ...$filterDefinitions
      * @return $this
      */
@@ -156,19 +151,6 @@ class RequestFactory implements \JsonSerializable
     {
         foreach ($facetDefinitions as $facet) {
             $this->facets[] = $facet->toArray();
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param ItemDefinition ...$itemDefinitions
-     * @return $this
-     */
-    public function addItems(ItemDefinition ...$itemDefinitions) : self
-    {
-        foreach ($itemDefinitions as $item) {
-            $this->items[] = $item->toArray();
         }
 
         return $this;
@@ -494,14 +476,6 @@ class RequestFactory implements \JsonSerializable
     {
         $this->parameters = $parameters;
         return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getItems() : array
-    {
-        return $this->items;
     }
 
     /**

@@ -46,6 +46,7 @@ class RestService
 
     public function request() : string
     {
+
         $body = $this->requestService->get();
         $request = new Request(
             'POST',
