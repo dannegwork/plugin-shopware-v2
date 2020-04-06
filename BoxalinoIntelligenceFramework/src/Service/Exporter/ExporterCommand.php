@@ -8,7 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ExporterCommand extends Command
 {
-    protected static $defaultName = 'boxalino-exporter:run';
+    protected static $defaultName = 'boxalino:exporter:run';
 
     protected $exporterFull;
     protected $exporterDelta;
@@ -25,7 +25,7 @@ class ExporterCommand extends Command
 
     protected function configure()
     {
-        $this->setDescription("Boxalino Full Data export command.")
+        $this->setDescription("Boxalino Full Data export command. Accepts parameters [delta|full] [account]")
             ->setHelp("This command allows you to update the Boxalino SOLR data index with your current data.");
 
         $this->addArgument(
@@ -33,7 +33,7 @@ class ExporterCommand extends Command
         );
 
         $this->addArgument(
-            "account", InputArgument::OPTIONAL, "Boxalino Account"
+            "account", InputArgument::OPTIONAL, "Boxalino Account name"
         );
 
         parent::configure();

@@ -189,7 +189,6 @@ class Customer extends ExporterComponentAbstract
         }
 
         return $attributesList;
-        #return $this->config->getAccountCustomersProperties($this->getAccount(), $attributesList);
     }
 
     /**
@@ -210,7 +209,6 @@ class Customer extends ExporterComponentAbstract
     }
 
     /**
-     * @deprecated
      * @return array
      */
     public function getExcludedProperties() : array

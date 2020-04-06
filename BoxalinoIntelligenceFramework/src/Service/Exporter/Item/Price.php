@@ -99,8 +99,12 @@ class Price extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        $salesChannelContext = $this->salesChannelContextService->get($this->getChannelId(), "boxalinoexporttoken",
-            $this->config->getChannelDefaultLanguageId($this->getAccount()));
+        $salesChannelContext = $this->salesChannelContextService->get(
+            $this->getChannelId(),
+            "boxalinoexporttoken",
+            $this->getChannelDefaultLanguage()
+        );
+
         if ($salesChannelContext->getTaxState() === CartPrice::TAX_STATE_GROSS) {
             $this->logger->info("BxIndexLog: PRICE EXPORT TYPE: " . CartPrice::TAX_STATE_GROSS);
             return [

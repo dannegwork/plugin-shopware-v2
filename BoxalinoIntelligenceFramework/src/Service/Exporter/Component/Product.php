@@ -208,7 +208,7 @@ class Product extends ExporterComponentAbstract
             return $this;
         }
 
-        $this->defineOtherProperties($exportFields);
+        $this->defineProperties($exportFields);
 
         $this->logger->info("BxIndexLog: -- Main product after memory: " . memory_get_usage(true));
         $this->logger->info("BxIndexLog: Finished products - main.");
@@ -233,7 +233,7 @@ class Product extends ExporterComponentAbstract
         $this->_exportExtra("categories", $this->categoryExporter);
         $this->_exportExtra("translations", $this->translationExporter);
         $this->_exportExtra("manufacturers", $this->manufacturerExporter);
-       # $this->_exportExtra("facets", $this->facetExporter);
+        $this->_exportExtra("facets", $this->facetExporter);
         $this->_exportExtra("prices", $this->priceExporter);
         $this->_exportExtra("reviews", $this->reviewsExporter);
         $this->_exportExtra("tags", $this->tagExporter);
@@ -266,7 +266,7 @@ class Product extends ExporterComponentAbstract
             ->setLibrary($this->getLibrary())
             ->setExportedProductIds($this->exportedProductIds);
         $exporter->export();
-        $this->logger->info("BxIndexLog: {$step} exporter after memory: " . memory_get_usage(true));
+        $this->logger->info("BxIndexLog: MEMORY AFTER {$step}: " . memory_get_usage(true));
     }
 
     /**
@@ -274,7 +274,7 @@ class Product extends ExporterComponentAbstract
      * @return void
      * @throws \Exception
      */
-    public function defineOtherProperties(array $properties) : void
+    public function defineProperties(array $properties) : void
     {
         $mainSourceKey = $this->getLibrary()->addMainCSVItemFile($this->getFiles()->getPath($this->getComponentMainFile()), $this->getComponentIdField());
         $this->getLibrary()->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
@@ -289,17 +289,28 @@ class Product extends ExporterComponentAbstract
                 continue;
             }
 
-            if ($property == 'sales') {
+            if (in_array($property, $this->getNumberFields())) {
                 $this->getLibrary()->addSourceNumberField($mainSourceKey, $property, $property);
                 $this->getLibrary()->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
                 continue;
             }
 
             $this->getLibrary()->addSourceStringField($mainSourceKey, $property, $property);
-            if ($property == 'parent_id' || $property == 'release_date' || $property == 'created_at' || $property == 'updated_at' || $property == 'product_number') {
+            if (in_array($property, $this->getSingleValuedFields()))
+            {
                 $this->getLibrary()->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
+    }
+
+    public function getNumberFields() : array
+    {
+        return ["available_stock", "stock", "rating_average", "child_count"];
+    }
+
+    public function getSingleValuedFields() : array
+    {
+        return ["parent_id", "release_date", "created_at", "updated_at", "product_number", "manufacturer_number", "ean"];
     }
 
     /**
@@ -406,7 +417,13 @@ class Product extends ExporterComponentAbstract
      */
     public function getProductGroupValue($row)
     {
-        return $row['id'];
+        if(is_null($row['parent_id']))
+        {
+            return $row['id'];
+        }
+
+        $this->logger->info("SET PARENT ID FOR PRODUCT " . $row['id']);
+        return $row['parent_id'];
     }
 
 }

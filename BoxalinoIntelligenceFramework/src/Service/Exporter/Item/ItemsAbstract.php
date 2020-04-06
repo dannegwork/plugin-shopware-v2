@@ -11,6 +11,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use http\Exception\BadQueryStringException;
+use http\QueryString;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
@@ -107,7 +108,7 @@ abstract class ItemsAbstract implements ExporterInterface
      * @param $property
      * @return string
      */
-    public function getFileNameByProperty($property)
+    public function getItemRelationFileNameByProperty($property)
     {
         return "product_$property.csv";
     }
@@ -150,7 +151,7 @@ abstract class ItemsAbstract implements ExporterInterface
                                        string $versionIdField, string $localizedFieldName, array $groupByFields
     ) : QueryBuilder {
         $languages = $this->config->getAccountLanguages($this->getAccount());
-        $defaultLanguage = $this->config->getChannelDefaultLanguageId($this->getAccount());
+        $defaultLanguage = $this->getChannelDefaultLanguage();
         $alias = []; $innerConditions = []; $leftConditions = []; $selectFields = array_merge($groupByFields, []);
         $inner='inner'; $left='left';
         foreach($languages as $languageId=>$languageCode)
@@ -202,7 +203,7 @@ abstract class ItemsAbstract implements ExporterInterface
     /**
      * @return string
      */
-    public function getItemMainFile()
+    public function getItemMainFile() : string
     {
         $callingClass = get_called_class();
         return $callingClass::EXPORTER_COMPONENT_ITEM_MAIN_FILE;
@@ -211,7 +212,7 @@ abstract class ItemsAbstract implements ExporterInterface
     /**
      * @return string
      */
-    public function getItemRelationFile()
+    public function getItemRelationFile() : string
     {
         $callingClass = get_called_class();
         return $callingClass::EXPORTER_COMPONENT_ITEM_RELATION_FILE;
@@ -234,6 +235,16 @@ abstract class ItemsAbstract implements ExporterInterface
         $callingClass = get_called_class();
         return $callingClass::EXPORTER_COMPONENT_ITEM_NAME;
     }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getChannelDefaultLanguage() : string
+    {
+        return $this->config->getChannelDefaultLanguageId($this->getAccount());
+    }
+
     /**
      * @return string
      */
@@ -315,7 +326,10 @@ abstract class ItemsAbstract implements ExporterInterface
         return [array_merge($additionalFields, [$this->getPropertyIdField(), "product_id"])];
     }
 
-    public function getPropertyIdField()
+    /**
+     * @return string
+     */
+    public function getPropertyIdField() : string
     {
         return $this->getPropertyName().'_id';
     }

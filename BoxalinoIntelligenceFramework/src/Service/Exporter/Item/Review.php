@@ -2,6 +2,7 @@
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Shopware\Core\Defaults;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -35,13 +36,17 @@ class Review extends ItemsAbstract
 
     public function getItemRelationQuery(int $page = 1): QueryBuilder
     {
+        $productIds = $this->getExportedProductIds();
         $query = $this->connection->createQueryBuilder();
         $query->select($this->getRequiredFields())
             ->from("product_review")
+            ->leftJoin('product_review', 'product', 'product', 'product.id = product_review.product_id OR product.parent_id = product_review.product_id')
             ->andWhere('product_review.product_version_id = :live')
-            ->andWhere('product_review.sales_channel_id = :channel')
+            #->andWhere('product_review.sales_channel_id = :channel') #by default - the channel is not used to filter out reviews
             ->andWhere('product_review.status = 1')
-            ->addGroupBy('product_review.product_id')
+            ->andWhere('product.id IN (:ids) OR product.parent_id IN (:ids)')
+            ->addGroupBy('IFNULL(product.parent_id, product.id)')
+            ->setParameter('ids', Uuid::fromHexToBytesList($productIds), Connection::PARAM_STR_ARRAY)
             ->setParameter("channel", Uuid::fromHexToBytes($this->getChannelId()), ParameterType::BINARY)
             ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
             ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
@@ -55,6 +60,6 @@ class Review extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ["AVG(product_review.points) AS {$this->getPropertyIdField()}", 'LOWER(HEX(product_review.product_id)) AS product_id'];
+        return ["AVG(product_review.points) AS {$this->getPropertyIdField()}", 'IFNULL(LOWER(HEX(product.parent_id)), LOWER(HEX(product.id))) AS product_id'];
     }
 }

@@ -35,7 +35,7 @@ class Translation extends ItemsAbstract
                     if($page==1) {
                         $this->logger->info("BxIndexLog: PRODUCTS EXPORT: No data found for $property.");
                         $headers = $this->getItemRelationHeaderColumns();
-                        $this->getFiles()->savePartToCsv($this->getFileNameByProperty($property), $headers);
+                        $this->getFiles()->savePartToCsv($this->getItemRelationFileNameByProperty($property), $headers);
                     }
                     break;
                 }
@@ -46,7 +46,7 @@ class Translation extends ItemsAbstract
                 }
                 foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
                 {
-                    $this->getFiles()->savePartToCsv($this->getFileNameByProperty($property), $dataSegment);
+                    $this->getFiles()->savePartToCsv($this->getItemRelationFileNameByProperty($property), $dataSegment);
                 }
 
                 $data = []; $page++;
@@ -98,7 +98,7 @@ class Translation extends ItemsAbstract
     public function registerFilesByProperty(string $property) : self
     {
         $labelColumns = $this->getLanguageHeaders();
-        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getFileNameByProperty($property)), 'product_id');
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFileNameByProperty($property)), 'product_id');
         switch($property){
             case $this->getTitleProperty():
                 $this->getLibrary()->addSourceTitleField($attributeSourceKey, $labelColumns);
