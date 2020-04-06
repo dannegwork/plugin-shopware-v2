@@ -72,8 +72,8 @@ class RequestService
             ->addSort($this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_SORT)->add("id"))
             ->addFilters(
                 $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->add("products_visibility", [30]),
-                $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->add("category_id", ["db1ae14a599c47b89be823bff5d4d7a4"]),
-                $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->addRange("discountedPrice", 0.80, 1500.30)
+                $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->add("category_id", ["db1ae14a599c47b89be823bff5d4d7a4"])
+                #$this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->addRange("discountedPrice", 0.80, 1500.30)
             )
             ->setOrFilters(false)
             ->addFacets(

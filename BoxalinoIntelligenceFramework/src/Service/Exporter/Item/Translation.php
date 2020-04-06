@@ -25,32 +25,22 @@ class Translation extends ItemsAbstract
         {
             $property = $property["COLUMN_NAME"];
             $this->logger->info("BxIndexLog: Preparing products - START $property EXPORT.");
-            $totalCount = 0; $page = 1; $data=[]; $header = true; $success = true;
+            $totalCount = 0; $page = 1; $data=[]; $header = true;
             while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
             {
-                $query = $this->connection->createQueryBuilder();
-                $query->select($this->getRequiredFields())
-                    ->from("product")
-                    ->leftJoin('product', '( ' . $this->getLocalizedFieldsQuery($property)->__toString() . ') ',
-                        'translation', 'translation.product_id = product.id AND product.version_id = translation.product_version_id')
-                    ->andWhere('product.version_id = :live')
-                    ->andWhere($this->getLanguageHeaderConditional())
-                    ->addGroupBy('product.id')
-                    ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                    ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
-                    ->setMaxResults(Product::EXPORTER_STEP);
-
+                $query = $this->getLocalizedPropertyQuery($property, $page);
                 $count = $query->execute()->rowCount();
                 $totalCount += $count;
                 if ($totalCount == 0) {
                     if($page==1) {
                         $this->logger->info("BxIndexLog: PRODUCTS EXPORT: No data found for $property.");
-                        $success = false;
+                        $headers = $this->getItemRelationHeaderColumns();
+                        $this->getFiles()->savePartToCsv($this->getFileNameByProperty($property), $headers);
                     }
                     break;
                 }
                 $data = $query->execute()->fetchAll();
-                if (count($data) > 0 && $header) {
+                if ($header) {
                     $header = false;
                     $data = array_merge(array(array_keys(end($data))), $data);
                 }
@@ -63,14 +53,39 @@ class Translation extends ItemsAbstract
                 if($totalCount < Product::EXPORTER_STEP - 1) { break;}
             }
 
-            if($success)
-            {
-                $this->registerFilesByProperty($property);
-            }
+            $this->registerFilesByProperty($property);
             $this->logger->info("BxIndexLog: Preparing products - END $property.");
         }
 
         $this->logger->info("BxIndexLog: Preparing products - END TRANSLATIONS.");
+    }
+
+    public function getItemRelationHeaderColumns(array $additionalFields = []): array
+    {
+        return [array_merge($this->getLanguageHeaders(), ['product_id'])];
+    }
+
+    /**
+     * @param $property
+     * @param $page
+     * @return QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
+    protected function getLocalizedPropertyQuery($property, $page) : QueryBuilder
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select($this->getRequiredFields())
+            ->from("product")
+            ->leftJoin('product', '( ' . $this->getLocalizedFieldsQuery($property)->__toString() . ') ',
+                'translation', 'translation.product_id = product.id AND product.version_id = translation.product_version_id')
+            ->andWhere('product.version_id = :live')
+            ->andWhere($this->getLanguageHeaderConditional())
+            ->addGroupBy('product.id')
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+            ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+            ->setMaxResults(Product::EXPORTER_STEP);
+
+        return $query;
     }
 
     /**
@@ -80,7 +95,7 @@ class Translation extends ItemsAbstract
      * @return Translation
      * @throws \Exception
      */
-    public function registerFilesByProperty(string $property) : Translation
+    public function registerFilesByProperty(string $property) : self
     {
         $labelColumns = $this->getLanguageHeaders();
         $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getFileNameByProperty($property)), 'product_id');
@@ -191,6 +206,14 @@ class Translation extends ItemsAbstract
             ->andWhere('information_schema.columns.TABLE_NAME = "product_translation"');
 
         return $query->execute()->fetchAll();
+    }
+
+    public function setFilesDefinitions(){}
+
+    public function getItemRelationQuery(int $page = 1): QueryBuilder
+    {
+        $query = $this->connection->createQueryBuilder();
+        return $query;
     }
 
 }

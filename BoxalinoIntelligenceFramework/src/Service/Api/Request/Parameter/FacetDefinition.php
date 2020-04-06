@@ -53,6 +53,8 @@ class FacetDefinition extends ParameterDefinition
         $this->boundsOnly = true;
         $this->numerical = true;
         $this->range = true;
+        $this->maxCount = -1;
+        $this->minPopulation = 1;
 
         return $this;
     }

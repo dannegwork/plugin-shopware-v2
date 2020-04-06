@@ -21,69 +21,54 @@ class Tag extends ItemsAbstract
     {
         $this->logger->info("BxIndexLog: Preparing products - START TAG EXPORT.");
         $query = $this->connection->createQueryBuilder();
-        $query->select(["LOWER(HEX(id)) AS tag_id", "name AS value"])
+        $query->select(["LOWER(HEX(id)) AS {$this->getPropertyIdField()}", "name AS value"])
             ->from("tag");
 
-        $data = $query->execute()->fetchAll();
-        if (count($data) > 0)
+        $count = $query->execute()->rowCount();
+        if($count == 0)
         {
+            $headers = [[$this->getPropertyIdField(), "value"]];
+            $this->getFiles()->savePartToCsv($this->getItemMainFile(), $headers);
+        } else {
+            $data = $query->execute()->fetchAll();
             $data = array_merge(array(array_keys(end($data))), $data);
             $this->getFiles()->savePartToCsv($this->getItemMainFile(), $data);
-            $this->exportItemRelation();
         }
 
+        $this->exportItemRelation();
         $this->logger->info("BxIndexLog: Preparing products - END TAG.");
     }
 
-    public function exportItemRelation()
+    /**
+     * @param int $page
+     * @return QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
+    public function getItemRelationQuery(int $page = 1) : QueryBuilder
     {
-        $this->logger->info("BxIndexLog: Preparing products - START TAG RELATIONS EXPORT.");
-        $totalCount = 0; $page = 1; $header = true; $success = true;
-        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
-        {
-            $query = $this->connection->createQueryBuilder();
-            $query->select($this->getRequiredFields())
-                ->from('product_tag')
-                ->leftJoin('product_tag', 'product', 'product', 'product_tag.product_id = product.id AND product_tag.product_version_id=product.version_id')
-                ->andWhere('product.version_id = :live')
-                ->andWhere("JSON_SEARCH(product.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
-                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                ->setParameter('channelRootCategoryId', $this->getRootCategoryId(), ParameterType::STRING)
-                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
-                ->setMaxResults(Product::EXPORTER_STEP);
+        $query = $this->connection->createQueryBuilder();
+        $query->select($this->getRequiredFields())
+            ->from('product_tag')
+            ->leftJoin('product_tag', 'product', 'product', 'product_tag.product_id = product.id AND product_tag.product_version_id=product.version_id')
+            ->andWhere('product.version_id = :live')
+            ->andWhere("JSON_SEARCH(product.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+            ->setParameter('channelRootCategoryId', $this->getRootCategoryId(), ParameterType::STRING)
+            ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+            ->setMaxResults(Product::EXPORTER_STEP);
 
-            $count = $query->execute()->rowCount();
-            $totalCount += $count;
-            if ($totalCount == 0) {
-                if($page==1) {
-                    $success = false;
-                }
-                break;
-            }
-            $data = $query->execute()->fetchAll();
-            if (count($data) > 0 && $header) {
-                $header = false;
-                $data = array_merge(array(array_keys(end($data))), $data);
-            }
-            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
-            {
-                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
-            }
+        return $query;
+    }
 
-            $data = []; $page++;
-            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
-        }
-
-        if($success)
-        {
-            $optionSourceKey = $this->getLibrary()->addResourceFile($this->getFiles()->getPath($this->getItemMainFile()),'tag_id', ['value']);
-            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), 'tag_id', $optionSourceKey);
-        }
+    public function setFilesDefinitions() : void
+    {
+        $optionSourceKey = $this->getLibrary()->addResourceFile($this->getFiles()->getPath($this->getItemMainFile()), $this->getPropertyIdField(), ['value']);
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+        $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), $this->getPropertyIdField(), $optionSourceKey);
     }
 
     public function getRequiredFields(): array
     {
-        return ['LOWER(HEX(product_tag.product_id)) AS product_id', 'LOWER(HEX(product_tag.tag_id)) AS tag_id'];
+        return ['LOWER(HEX(product_tag.product_id)) AS product_id', "LOWER(HEX(product_tag.tag_id)) AS {$this->getPropertyIdField()}"];
     }
 }

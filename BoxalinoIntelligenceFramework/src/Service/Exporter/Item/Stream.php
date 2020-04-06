@@ -3,6 +3,7 @@ namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Query\QueryBuilder;
 
 /**
  * Class Stream
@@ -22,8 +23,16 @@ class Stream extends ItemsAbstract
         $this->logger->info("BxIndexLog: Preparing products - END STREAM.");
     }
 
+    public function setFilesDefinitions(){}
+
+    public function getItemRelationQuery(int $page = 1): QueryBuilder
+    {
+        return $this->connection->createQueryBuilder();
+    }
+
     public function getRequiredFields(): array
     {
         return [];
     }
+
 }

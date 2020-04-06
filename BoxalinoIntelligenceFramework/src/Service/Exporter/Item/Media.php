@@ -23,8 +23,8 @@ use Shopware\Core\Framework\Uuid\Uuid;
 class Media extends ItemsAbstract
 {
     CONST EXPORTER_COMPONENT_ITEM_NAME = "image";
-    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'media.csv';
-    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_media.csv';
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'images.csv';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_image.csv';
 
     /**
      * @var UrlGeneratorInterface
@@ -64,23 +64,17 @@ class Media extends ItemsAbstract
 
     public function export()
     {
-        $this->logger->info("BxIndexLog: Preparing products - START MEDIA EXPORT.");
-        $totalCount = 0; $page = 1; $header = true; $success = true;
+        $this->logger->info("BxIndexLog: Preparing products - START PRODUCT IMAGES EXPORT.");
+        $totalCount = 0; $page = 1; $header = true;
         while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
         {
-            $query = $this->connection->createQueryBuilder();
-            $query->select($this->getRequiredFields())
-                ->from("product_media")
-                ->andWhere('product_media.product_version_id = :live')
-                ->andWhere('product_media.version_id = :live')
-                ->addGroupBy('product_media.product_id')
-                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY);
-
+            $query = $this->getItemRelationQuery($page);
             $count = $query->execute()->rowCount();
             $totalCount += $count;
             if ($totalCount == 0) {
                 if($page==1) {
-                    $success = false;
+                    $headers = $this->getItemRelationHeaderColumns();
+                    $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $headers);
                 }
                 break;
             }
@@ -91,14 +85,14 @@ class Media extends ItemsAbstract
                     $data[] = array_keys($row);
                     $header = false;
                 }
-                $images = explode('|', $row['value']);
+                $images = explode('|', $row[$this->getPropertyIdField()]);
                 foreach ($images as $index => $image)
                 {
                     /** @var MediaEntity $media */
                     $media = $this->mediaRepository->search(new Criteria([$image]), $this->context)->get($image);
                     $images[$index] = $this->mediaUrlGenerator->getAbsoluteMediaUrl($media);
                 }
-                $row['value'] = implode('|', $images);
+                $row[$this->getPropertyIdField()] = implode('|', $images);
                 $data[] = $row;
                 if(count($data) > Product::EXPORTER_DATA_SAVE_STEP)
                 {
@@ -112,14 +106,35 @@ class Media extends ItemsAbstract
             if($totalCount < Product::EXPORTER_STEP - 1) { break;}
         }
 
-        if($success)
-        {
-            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), 'value');
-            $this->getLibrary()->addFieldParameter($attributeSourceKey, $this->getPropertyName(), 'splitValues', '|');
-        }
+        $this->setFilesDefinitions();
+        $this->logger->info("BxIndexLog: Preparing products - END IMAGES.");
+    }
 
-        $this->logger->info("BxIndexLog: Preparing products - END MEDIA.");
+    public function setFilesDefinitions()
+    {
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+        $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), $this->getPropertyIdField());
+        $this->getLibrary()->addFieldParameter($attributeSourceKey, $this->getPropertyName(), 'splitValues', '|');
+    }
+
+    /**
+     * @param int $page
+     * @return QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
+    public function getItemRelationQuery(int $page = 1): QueryBuilder
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select($this->getRequiredFields())
+            ->from("product_media")
+            ->andWhere('product_media.product_version_id = :live')
+            ->andWhere('product_media.version_id = :live')
+            ->addGroupBy('product_media.product_id')
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+            ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+            ->setMaxResults(Product::EXPORTER_STEP);
+
+        return $query;
     }
 
     /**
@@ -127,6 +142,10 @@ class Media extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ["GROUP_CONCAT(LOWER(HEX(product_media.media_id)) ORDER BY product_media.position SEPARATOR '|') AS value", "LOWER(HEX(product_media.product_id)) AS product_id"];
+        return ["GROUP_CONCAT(LOWER(HEX(product_media.media_id)) ORDER BY product_media.position SEPARATOR '|') AS {$this->getPropertyIdField()}",
+            "LOWER(HEX(product_media.product_id)) AS product_id"
+        ];
     }
+
+
 }

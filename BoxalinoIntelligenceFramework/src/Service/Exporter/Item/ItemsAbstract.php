@@ -2,11 +2,13 @@
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
 use Boxalino\IntelligenceFramework\Service\Exporter\Component\ExporterComponentAbstract;
+use Boxalino\IntelligenceFramework\Service\Exporter\Component\Product;
 use Boxalino\IntelligenceFramework\Service\Exporter\ExporterInterface;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\Configuration;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\ContentLibrary;
 use Boxalino\IntelligenceFramework\Service\Exporter\Util\FileHandler;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use http\Exception\BadQueryStringException;
 use Psr\Log\LoggerInterface;
@@ -64,6 +66,41 @@ abstract class ItemsAbstract implements ExporterInterface
 
     abstract public function export();
     abstract public function getRequiredFields() : array;
+    abstract public function getItemRelationQuery(int $page=1) : QueryBuilder;
+    abstract public function setFilesDefinitions();
+
+    public function exportItemRelation()
+    {
+        $this->logger->info("BxIndexLog: Preparing products - START ITEM RELATIONS EXPORT.");
+        $totalCount = 0; $page = 1; $header = true;
+        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
+        {
+            $query = $this->getItemRelationQuery($page);
+            $count = $query->execute()->rowCount();
+            $totalCount += $count;
+            if ($totalCount == 0) {
+                if($page==1) {
+                    $headers = $this->getItemRelationHeaderColumns();
+                    $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $headers);
+                }
+                break;
+            }
+            $data = $query->execute()->fetchAll();
+            if (count($data) > 0 && $header) {
+                $header = false;
+                $data = array_merge(array(array_keys(end($data))), $data);
+            }
+            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
+            {
+                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
+            }
+
+            $data = []; $page++;
+            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
+        }
+
+        $this->setFilesDefinitions();
+    }
 
 
     /**
@@ -269,4 +306,17 @@ abstract class ItemsAbstract implements ExporterInterface
         return $this;
     }
 
+    /**
+     * @param array $additionalFields
+     * @return array
+     */
+    public function getItemRelationHeaderColumns(array $additionalFields = []) : array
+    {
+        return [array_merge($additionalFields, [$this->getPropertyIdField(), "product_id"])];
+    }
+
+    public function getPropertyIdField()
+    {
+        return $this->getPropertyName().'_id';
+    }
 }

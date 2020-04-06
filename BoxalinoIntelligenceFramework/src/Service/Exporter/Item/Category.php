@@ -18,18 +18,12 @@ class Category extends ItemsAbstract
     CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'categories.csv';
     CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_categories.csv';
 
-    public function export()
-    {
-        $this->exportMain();
-        $this->exportRelation();
-    }
-
     /**
      * Export item categories
      * REQUIRED FIELDS are: id, parent_id and translation per language
      * ADITIONAL DETAILS exported are: tags
      */
-    public function exportMain()
+    public function export()
     {
         $this->logger->info("BxIndexLog: Preparing products - START CATEGORIES EXPORT.");
         $rootCategoryId = $this->getRootCategoryId();
@@ -46,16 +40,13 @@ class Category extends ItemsAbstract
             ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY);
 
         $data = $query->execute()->fetchAll();
-        if (count($data) > 0)
-        {
-            $data = array_merge(array(array_keys(end($data))), $data);
-        }
+        $data = array_merge(array(array_keys(end($data))), $data);
         $this->getFiles()->savePartToCsv($this->getItemMainFile(), $data);
         $this->getLibrary()->addCategoryFile($this->getFiles()->getPath($this->getItemMainFile()), 'id', 'parent_id', $this->getLanguageHeaders());
 
+        $this->exportItemRelation();
         $this->logger->info("BxIndexLog: Preparing products - END CATEGORIES.");
     }
-
 
     /**
      * Accessing category name translation (name)
@@ -98,9 +89,37 @@ class Category extends ItemsAbstract
      * @TODO implement incremental save to file for data
      * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
      */
-    public function exportRelation()
+    public function exportItemRelation()
     {
         $this->logger->info("BxIndexLog: Preparing products - START CATEGORIES RELATION EXPORT.");
+
+        $query = $this->getItemRelationQuery();
+        $data = $query->execute()->fetchAll();
+        if (count($data) > 0) {
+            $data = array_merge(array(array_keys(end($data))), $data);
+            $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $data);
+        } else {
+            $headers = $this->getItemRelationHeaderColumns();
+            $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $headers);
+        }
+
+        $this->setFilesDefinitions();
+        $this->logger->info("BxIndexLog: Preparing products - END CATEGORY RELATION EXPORT.");
+    }
+
+    public function setFilesDefinitions()
+    {
+        $productToCategoriesSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+        $this->getLibrary()->setCategoryField($productToCategoriesSourceKey, $this->getPropertyIdField());
+    }
+
+    /**
+     * @param int $page
+     * @return QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
+    public function getItemRelationQuery(int $page=1): QueryBuilder
+    {
         $rootCategoryId = $this->getRootCategoryId();
         $query = $this->connection->createQueryBuilder();
         $query->select(['LOWER(HEX(product_category_tree.category_id)) AS category_id', 'LOWER(HEX(product_category_tree.product_id)) AS product_id'])
@@ -116,20 +135,12 @@ class Category extends ItemsAbstract
 
         /**
         if ($this->getExportedProductIds()) {
-            $query->andWhere("LOWER(HEX(product_category_tree.product_id)) IN (:productIds)")
-                ->setParameter("productIds", implode(",", $this->getExportedProductIds()));
+        $query->andWhere("LOWER(HEX(product_category_tree.product_id)) IN (:productIds)")
+        ->setParameter("productIds", implode(",", $this->getExportedProductIds()));
         }
          */
 
-        $data = $query->execute()->fetchAll();
-        if (count($data) > 0) {
-            $data = array_merge(array(array_keys(end($data))), $data);
-            $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $data);
-            $productToCategoriesSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->setCategoryField($productToCategoriesSourceKey, 'category_id');
-        }
-
-        $this->logger->info("BxIndexLog: Preparing products - END CATEGORY RELATION EXPORT.");
+        return $query;
     }
 
     /**

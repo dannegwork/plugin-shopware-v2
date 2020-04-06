@@ -17,83 +17,67 @@ class Manufacturer extends ItemsAbstract
     public function export()
     {
         $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER EXPORT.");
-        $fields = array_merge($this->getLanguageHeaders(), ['LOWER(HEX(manufacturer.product_manufacturer_id)) AS product_manufacturer_id']);
+        $fields = array_merge($this->getLanguageHeaders(),
+            ["LOWER(HEX(manufacturer.product_manufacturer_id)) AS {$this->getPropertyIdField()}"]
+        );
 
         $query = $this->connection->createQueryBuilder();
         $query->select($fields)
-            ->from('( '. $this->getLocalizedFieldsQuery()->__toString().')', 'manufacturer')
+            ->from('( ' . $this->getLocalizedFieldsQuery()->__toString() . ')', 'manufacturer')
             ->andWhere('manufacturer.product_manufacturer_version_id = :live')
             ->addGroupBy('manufacturer.product_manufacturer_id')
             ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY);
 
         $count = $query->execute()->rowCount();
         if ($count == 0) {
-            return;
-        }
-        $data = $query->execute()->fetchAll();
-        if (count($data) > 0)
-        {
+            $headers = [array_merge($this->getLanguageHeaders(), [$this->getPropertyIdField()])];
+            $this->getFiles()->savePartToCsv($this->getItemMainFile(), $headers);
+        } else {
+            $data = $query->execute()->fetchAll();
             $data = array_merge(array(array_keys(end($data))), $data);
             $this->getFiles()->savePartToCsv($this->getItemMainFile(), $data);
-            $this->exportItemRelation();
         }
 
+        $this->exportItemRelation();
         $this->logger->info("BxIndexLog: Preparing products - END MANUFACTURER.");
     }
 
-    public function exportItemRelation()
+    /**
+     * @param int $page
+     * @return QueryBuilder
+     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     */
+    public function getItemRelationQuery(int $page = 1): QueryBuilder
     {
-        $this->logger->info("BxIndexLog: Preparing products - START MANUFACTURER RELATIONS EXPORT.");
-        $totalCount = 0; $page = 1; $header = true; $success = true;
-        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
-        {
-            $query = $this->connection->createQueryBuilder();
-            $query->select($this->getRequiredFields())
-                ->from('product', 'p')
-                ->andWhere('p.version_id = :live')
-                ->andWhere('p.product_manufacturer_version_id = :live')
-                ->andWhere("JSON_SEARCH(p.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
-                ->addGroupBy('p.id')
-                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                ->setParameter('channelRootCategoryId', $this->getRootCategoryId(), ParameterType::STRING)
-                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
-                ->setMaxResults(Product::EXPORTER_STEP);
+        $query = $this->connection->createQueryBuilder();
+        $query->select($this->getRequiredFields())
+            ->from('product', 'p')
+            ->andWhere('p.version_id = :live')
+            ->andWhere('p.product_manufacturer_version_id = :live')
+            ->andWhere("JSON_SEARCH(p.category_tree, 'one', :channelRootCategoryId) IS NOT NULL")
+            ->addGroupBy('p.id')
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+            ->setParameter('channelRootCategoryId', $this->getRootCategoryId(), ParameterType::STRING)
+            ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+            ->setMaxResults(Product::EXPORTER_STEP);
 
-            $count = $query->execute()->rowCount();
-            $totalCount += $count;
-            if ($totalCount == 0) {
-                if($page==1) {
-                    $this->logger->info("BxIndexLog: PRODUCTS EXPORT: No data found for MANUFACTURERS.");
-                    $success = false;
-                }
-                break;
-            }
-            $data = $query->execute()->fetchAll();
-            if (count($data) > 0 && $header) {
-                $header = false;
-                $data = array_merge(array(array_keys(end($data))), $data);
-            }
-            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
-            {
-                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
-            }
+        return $query;
+    }
 
-            $data = []; $page++;
-            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
-        }
-
-        if($success)
-        {
-            $optionSourceKey = $this->getLibrary()->addResourceFile($this->getFiles()->getPath($this->getItemMainFile()),
-                'product_manufacturer_id', $this->getLanguageHeaders());
-            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->addSourceLocalizedTextField($attributeSourceKey, $this->getPropertyName(),'product_manufacturer_id', $optionSourceKey);
-        }
+    /**
+     * @throws \Exception
+     */
+    public function setFilesDefinitions()
+    {
+        $optionSourceKey = $this->getLibrary()->addResourceFile($this->getFiles()->getPath($this->getItemMainFile()),
+            $this->getPropertyIdField(), $this->getLanguageHeaders());
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+        $this->getLibrary()->addSourceLocalizedTextField($attributeSourceKey, $this->getPropertyName(),$this->getPropertyIdField(), $optionSourceKey);
     }
 
     /**
      * @return QueryBuilder
-     * @throws \Shopware\Core\Framework\Uuid\Exception\InvalidUuidException
+     * @throws \Exception
      */
     public function getLocalizedFieldsQuery() : QueryBuilder
     {
@@ -108,6 +92,6 @@ class Manufacturer extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ['LOWER(HEX(p.id)) AS product_id', 'LOWER(HEX(p.product_manufacturer_id)) AS product_manufacturer_id'];
+        return ['LOWER(HEX(p.id)) AS product_id', "LOWER(HEX(p.product_manufacturer_id)) AS {$this->getPropertyIdField()}"];
     }
 }

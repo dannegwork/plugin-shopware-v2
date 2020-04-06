@@ -16,57 +16,38 @@ use Shopware\Core\Framework\Uuid\Uuid;
 class Review extends ItemsAbstract
 {
 
-    CONST EXPORTER_COMPONENT_ITEM_NAME = "vote";
-    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'votes.csv';
-    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_votes.csv';
+    CONST EXPORTER_COMPONENT_ITEM_NAME = "review_points";
+    CONST EXPORTER_COMPONENT_ITEM_MAIN_FILE = 'review_points.csv';
+    CONST EXPORTER_COMPONENT_ITEM_RELATION_FILE = 'product_review_points.csv';
 
     public function export()
     {
-        $this->logger->info("BxIndexLog: Preparing products - START REVIEWS EXPORT.");
-        $totalCount = 0; $page = 1; $header = true; $success = true;
-        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
-        {
-            $query = $this->connection->createQueryBuilder();
-            $query->select($this->getRequiredFields())
-                ->from("product_review")
-                ->andWhere('product_review.product_version_id = :live')
-                ->andWhere('product_review.sales_channel_id = :channel')
-                ->andWhere('product_review.status = 1')
-                ->addGroupBy('product_review.product_id')
-                ->setParameter("channel", Uuid::fromHexToBytes($this->getChannelId()), ParameterType::BINARY)
-                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
-                ->setMaxResults(Product::EXPORTER_STEP);
+        $this->logger->info("BxIndexLog: Preparing products - START REVIEW POINTS EXPORT.");
+        $this->exportItemRelation();
+        $this->logger->info("BxIndexLog: Preparing products - END REVIEW POINTS.");
+    }
 
-            $count = $query->execute()->rowCount();
-            $totalCount += $count;
-            if ($totalCount == 0) {
-                if($page==1){
-                    $success = false;
-                }
-                break;
-            }
-            $data = $query->execute()->fetchAll();
-            if (count($data) > 0 && $header) {
-                $header = false;
-                $data = array_merge(array(array_keys(end($data))), $data);
-            }
-            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
-            {
-                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
-            }
+    public function setFilesDefinitions()
+    {
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+        $this->getLibrary()->addSourceNumberField($attributeSourceKey, $this->getPropertyName(), $this->getPropertyIdField());
+    }
 
-            $data = []; $page++;
-            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
-        }
+    public function getItemRelationQuery(int $page = 1): QueryBuilder
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select($this->getRequiredFields())
+            ->from("product_review")
+            ->andWhere('product_review.product_version_id = :live')
+            ->andWhere('product_review.sales_channel_id = :channel')
+            ->andWhere('product_review.status = 1')
+            ->addGroupBy('product_review.product_id')
+            ->setParameter("channel", Uuid::fromHexToBytes($this->getChannelId()), ParameterType::BINARY)
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+            ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+            ->setMaxResults(Product::EXPORTER_STEP);
 
-        if($success)
-        {
-            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->addSourceNumberField($attributeSourceKey, $this->getPropertyName(), 'value');
-        }
-
-        $this->logger->info("BxIndexLog: Preparing products - END REVIEWS.");
+        return $query;
     }
 
     /**
@@ -74,6 +55,6 @@ class Review extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return ['AVG(product_review.points) AS value', 'LOWER(HEX(product_review.product_id)) AS product_id'];
+        return ["AVG(product_review.points) AS {$this->getPropertyIdField()}", 'LOWER(HEX(product_review.product_id)) AS product_id'];
     }
 }

@@ -312,7 +312,6 @@ class Product extends ExporterComponentAbstract
     public function getFields() : array
     {
         return $this->getRequiredProperties();
-        #return $this->config->getAccountProductsProperties($this->getAccount(), $this->getRequiredProperties(), []);
     }
 
     /**

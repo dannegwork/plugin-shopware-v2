@@ -1,6 +1,7 @@
 <?php
 namespace Boxalino\IntelligenceFramework\Service\Exporter\Item;
 
+use Doctrine\DBAL\Query\QueryBuilder;
 use Shopware\Core\Checkout\Cart\Rule\CartAmountRule;
 use Shopware\Core\Checkout\Cart\Price\Struct\CartPrice;
 #use Shopware\Core\System\SalesChannel\Context\SalesChannelContextService;
@@ -51,57 +52,43 @@ class Price extends ItemsAbstract
     public function export()
     {
         $this->logger->info("BxIndexLog: Preparing products - START PRICE EXPORT.");
-        $totalCount = 0; $page = 1; $header = true; $success = true;
-        $this->logger->info("BxIndexLog: PRICE EXPORT RULE TYPE - " . $this->cartAmmountRule->getName());
-        while (Product::EXPORTER_LIMIT > $totalCount + Product::EXPORTER_STEP)
-        {
-            $query = $this->connection->createQueryBuilder();
-            $query->select($this->getRequiredFields())
-                ->from("product_price")
-                ->leftJoin("product_price", 'rule_condition', 'rule_condition',
-                    'product_price.rule_id = rule_condition.rule_id AND rule_condition.type = :priceRuleType')
-                ->andWhere('product_price.quantity_start = 1')
-                ->andWhere('product_price.product_version_id = :live')
-                ->andWhere('product_price.version_id = :live')
-                ->addGroupBy('product_price.product_id')
-                ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
-                ->setParameter('priceRuleType', $this->cartAmmountRule->getName(), ParameterType::STRING)
-                ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
-                ->setMaxResults(Product::EXPORTER_STEP);
-
-            $count = $query->execute()->rowCount();
-            $totalCount += $count;
-            if ($totalCount == 0) {
-                if($page==1){
-                    $success = false;
-                }
-                break;
-            }
-            $data = $query->execute()->fetchAll();
-            if (count($data) > 0 && $header) {
-                $header = false;
-                $data = array_merge(array(array_keys(end($data))), $data);
-            }
-            foreach(array_chunk($data, Product::EXPORTER_DATA_SAVE_STEP) as $dataSegment)
-            {
-                $this->getFiles()->savePartToCsv($this->getItemRelationFile(), $dataSegment);
-            }
-
-            $data = []; $page++;
-            if($totalCount < Product::EXPORTER_STEP - 1) { break;}
-        }
-
-        if($success)
-        {
-            $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-            $this->getLibrary()->addSourceDiscountedPriceField($attributeSourceKey, 'price');
-            $this->getLibrary()->addSourceListPriceField($attributeSourceKey, 'price');
-            $this->getLibrary()->addSourceNumberField($attributeSourceKey, 'bx_grouped_price', 'price');
-            $this->getLibrary()->addFieldParameter($attributeSourceKey, 'bx_grouped_price', 'multiValued', 'false');
-        }
-
+        $this->exportItemRelation();
         $this->logger->info("BxIndexLog: Preparing products - END PRICE.");
     }
+
+    public function getItemRelationHeaderColumns(array $additionalFields = []): array
+    {
+        return [["product_id", "price"]];
+    }
+
+    public function setFilesDefinitions()
+    {
+        $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
+        $this->getLibrary()->addSourceDiscountedPriceField($attributeSourceKey, 'price');
+        $this->getLibrary()->addSourceListPriceField($attributeSourceKey, 'price');
+        $this->getLibrary()->addSourceNumberField($attributeSourceKey, 'bx_grouped_price', 'price');
+        $this->getLibrary()->addFieldParameter($attributeSourceKey, 'bx_grouped_price', 'multiValued', 'false');
+    }
+
+    public function getItemRelationQuery(int $page = 1): QueryBuilder
+    {
+        $query = $this->connection->createQueryBuilder();
+        $query->select($this->getRequiredFields())
+            ->from("product_price")
+            ->leftJoin("product_price", 'rule_condition', 'rule_condition',
+                'product_price.rule_id = rule_condition.rule_id AND rule_condition.type = :priceRuleType')
+            ->andWhere('product_price.quantity_start = 1')
+            ->andWhere('product_price.product_version_id = :live')
+            ->andWhere('product_price.version_id = :live')
+            ->addGroupBy('product_price.product_id')
+            ->setParameter('live', Uuid::fromHexToBytes(Defaults::LIVE_VERSION), ParameterType::BINARY)
+            ->setParameter('priceRuleType', $this->cartAmmountRule->getName(), ParameterType::STRING)
+            ->setFirstResult(($page - 1) * Product::EXPORTER_STEP)
+            ->setMaxResults(Product::EXPORTER_STEP);
+
+        return $query;
+    }
+
 
     /**
      * Depending on the channel configuration, the gross or net price is the one displayed to the user
