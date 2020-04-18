@@ -422,7 +422,6 @@ class Product extends ExporterComponentAbstract
             return $row['id'];
         }
 
-        $this->logger->info("SET PARENT ID FOR PRODUCT " . $row['id']);
         return $row['parent_id'];
     }
 

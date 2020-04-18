@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface" class="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandler">
+            <call method="addAccessor">
+                <argument>bx-sort</argument>
+                <argument>sort</argument>
+                <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Sort</argument>
+            </call>
+            <call method="addAccessor">
+                <argument>bx-facets</argument>
+                <argument>facets</argument>
+                <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\FacetList</argument>
+            </call>
+            <call method="addAccessor">
+                <argument>bx-acQuery</argument>
+                <argument>suggestion</argument>
+                <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AcQuery</argument>
+            </call>
+            <call method="addAccessor">
+                <argument>bx-pagination</argument>
+                <argument>pagination</argument>
+                <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Pagination</argument>
+            </call>
+            <call method="addAccessor">
+                <argument>bx-hit</argument>
+                <argument>hit</argument>
+                <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Hit</argument>
+            </call>
+            <call method="addAccessor">
+                <argument>blocks</argument>
+                <argument>blocks</argument>
+                <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Block</argument>
+            </call>
+        </service>
+
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface" class="Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Accessor">
+            <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface"/>
+        </service>
+    </services>
+
+</container>

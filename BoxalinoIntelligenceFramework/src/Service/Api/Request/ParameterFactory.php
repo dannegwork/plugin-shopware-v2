@@ -42,7 +42,7 @@ class ParameterFactory
      * @param string $type
      * @return mixed
      */
-    public function get(string $type)
+    public function get(string $type) : ? ParameterInterface
     {
         $serviceId = self::BOXALINO_API_REQUEST_PARAMETER_SERVICE_PREFIX.strtolower($type);
         if($this->container->has($serviceId))

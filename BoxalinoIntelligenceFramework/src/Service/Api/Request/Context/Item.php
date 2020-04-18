@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Boxalino\IntelligenceFramework\Service\Api\Context;
+namespace Boxalino\IntelligenceFramework\Service\Api\Request\Context;
 
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FacetDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FilterDefinition;
@@ -7,42 +7,20 @@ use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\HeaderParameter
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\UserParameterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\ItemDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\SortingDefinition;
-use Boxalino\IntelligenceFramework\Service\Api\RequestFactory;
 use GuzzleHttp\Client;
 use JsonSerializable;
 use Psr\Http\Message\RequestInterface;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 /**
+ * Item context
+ * uses a product ID (or more) as a context
+ *
  * @package Boxalino\IntelligenceFramework\Service\Api
  */
-class Recommendation extends RequestFactory
+class Item
 {
 
-    /**
-     * @var array
-     */
-    protected $items = [];
 
-    /**
-     * @param ItemDefinition ...$itemDefinitions
-     * @return $this
-     */
-    public function addItems(ItemDefinition ...$itemDefinitions) : self
-    {
-        foreach ($itemDefinitions as $item) {
-            $this->items[] = $item->toArray();
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getItems() : array
-    {
-        return $this->items;
-    }
 
 }

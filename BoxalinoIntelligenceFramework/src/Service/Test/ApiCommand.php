@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ApiCommand extends Command
 {
-    protected static $defaultName = 'boxalino-test:api';
+    protected static $defaultName = 'boxalino:api:test';
 
     protected $restService;
 

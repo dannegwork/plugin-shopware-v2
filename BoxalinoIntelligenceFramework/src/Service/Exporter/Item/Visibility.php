@@ -40,11 +40,12 @@ class Visibility extends ItemsAbstract
     public function setFilesDefinitions()
     {
         $attributeSourceKey = $this->getLibrary()->addCSVItemFile($this->getFiles()->getPath($this->getItemRelationFile()), 'product_id');
-        $this->getLibrary()->addSourceStringField($attributeSourceKey, $this->getPropertyName(), $this->getPropertyIdField());
+        $this->getLibrary()->addSourceNumberField($attributeSourceKey, $this->getPropertyName(), $this->getPropertyIdField());
     }
 
     public function getRequiredFields(): array
     {
         return ["visibility as {$this->getPropertyIdField()}", 'LOWER(HEX(product_id)) AS product_id'];
     }
+
 }

@@ -10,11 +10,6 @@
             <helpText>Is the overall Boxalino plugin active (global switch)?</helpText>
         </input-field>
         <input-field type="text">
-            <name>domain</name>
-            <label>Domain</label>
-            <helpText>What is your domain (e.g.: www.myshop.com)? Used to options cookie information about session ID and visitor ID.</helpText>
-        </input-field>
-        <input-field type="text">
             <name>account</name>
             <label>Account</label>
             <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
@@ -29,21 +24,10 @@
             <label>API password</label>
             <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
         </input-field>
-        <input-field type="single-select">
-            <name>index</name>
-            <defaultValue>1</defaultValue>
-            <label>Data Index</label>
-            <helpText>Is the account a development account or a production account?.</helpText>
-            <options>
-                <option>
-                    <id>1</id>
-                    <name>Production</name>
-                </option>
-                <option>
-                    <id>0</id>
-                    <name>Development</name>
-                </option>
-            </options>
+        <input-field type="bool">
+            <name>devIndex</name>
+            <defaultValue>0</defaultValue>
+            <label>Use development data index</label>
         </input-field>
     </card>
     <card>
@@ -161,21 +145,11 @@
             <defaultValue>1</defaultValue>
             <label>Export Transactions</label>
         </input-field>
-        <input-field type="single-select">
+        <input-field type="bool">
             <name>exportTransactionMode</name>
             <defaultValue>0</defaultValue>
-            <label>Transactions Mode</label>
-            <helpText>Choose how the transaction should be exported. For Incremental, the exporter will only export the last month.</helpText>
-            <options>
-                <option>
-                    <id>0</id>
-                    <name>Full</name>
-                </option>
-                <option>
-                    <id>1</id>
-                    <name>Incremental</name>
-                </option>
-            </options>
+            <label>Last month transactions export</label>
+            <helpText>If true, a false - the full transactions history will be exported. If true (desired mode), the exporter will only export the last month.</helpText>
         </input-field>
         <input-field type="text">
             <name>exportTransactionInclude</name>

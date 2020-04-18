@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Request\Definition\AutocompleteRequestDefinitionInterface"
+                 class="Boxalino\IntelligenceFramework\Service\Api\Request\Definition\AutocompleteRequestDefinition"
+                 parent="Boxalino\IntelligenceFramework\Service\Api\Request\RequestDefinitionInterface"/>
+
+        <service id="boxalino.api.request.context.autocomplete" class="Boxalino\IntelligenceFramework\Service\Api\Request\Context\Autocomplete"
+                 parent="Boxalino\IntelligenceFramework\Service\Api\Request\ContextInterface">
+            <call method="setRequestDefinition">
+                <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\Request\Definition\AutocompleteRequestDefinitionInterface"/>
+            </call>
+            <call method="setWidget"><argument>autocomplete</argument></call>
+            <call method="setHitCount"><argument>10</argument></call>
+            <call method="setSuggestionCount"><argument>5</argument></call>
+        </service>
+
+        <service id="Boxalino\IntelligenceFramework\Service\Api\ApiCallServiceInterface" class="Boxalino\IntelligenceFramework\Service\Api\ApiCallService">
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\Response\ResponseDefinitionInterface" />
+        </service>
+
+        <service id="boxalino.api.content.page.response" class="Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiResponsePage"/>
+        <service id="boxalino.api.content.page.loader.autocomplete" class="Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiPageLoader">
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+            <argument type="service" id="boxalino.api.request.context.autocomplete"/>
+            <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\ApiCallServiceInterface"/>
+            <argument type="service" id="boxalino.api.util.configurator"/>
+        </service>
+
+        <!-- frontend.search.suggest decorator INTEGRATION -->
+        <service id="Boxalino\IntelligenceFramework\Storefront\Controller\SearchController"
+                 decorates="Shopware\Storefront\Controller\SearchController">
+            <!--<argument type="service" id="Shopware\Storefront\Controller\SearchController.inner"/>-->
+            <argument type="service" id="Shopware\Storefront\Page\Search\SearchPageLoader"/>
+            <argument type="service" id="boxalino.api.content.page.loader.autocomplete"/>
+            <argument type="service" id="boxalino.api.request.context.search"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+
+    </services>
+
+</container>

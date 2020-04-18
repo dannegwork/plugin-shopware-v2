@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Boxalino\IntelligenceFramework\Service\Api;
+namespace Boxalino\IntelligenceFramework\Service\Api\Request;
 
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FacetDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FilterDefinition;
@@ -7,15 +7,13 @@ use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\HeaderParameter
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\UserParameterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\ItemDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\SortingDefinition;
-use GuzzleHttp\Client;
-use JsonSerializable;
-use Psr\Http\Message\RequestInterface;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 /**
+ * Boxalino API Request definition object
+ *
  * @package Boxalino\IntelligenceFramework\Service\Api
  */
-class RequestFactory implements \JsonSerializable
+class RequestDefinition implements RequestDefinitionInterface
 {
     /**
      * @var string
@@ -192,7 +190,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $apiSecret
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setApiSecret(string $apiSecret) : self
     {
@@ -210,7 +208,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param bool $dev
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setDev(bool $dev) : self
     {
@@ -228,7 +226,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param bool $test
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setTest(bool $test) : self
     {
@@ -246,7 +244,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $language
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setLanguage(string $language) : self
     {
@@ -264,7 +262,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $sessionId
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setSessionId(string $sessionId) : self
     {
@@ -282,7 +280,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $profileId
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setProfileId(string $profileId) : self
     {
@@ -300,7 +298,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $customerId
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setCustomerId(string $customerId) : self
     {
@@ -318,7 +316,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $widget
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setWidget(string $widget) : self
     {
@@ -336,7 +334,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param int $hitCount
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setHitCount(int $hitCount) : self
     {
@@ -354,7 +352,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param int $offset
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setOffset(int $offset) : self
     {
@@ -372,7 +370,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $groupBy
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setGroupBy(string $groupBy) : self
     {
@@ -408,7 +406,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param array $returnFields
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setReturnFields(array $returnFields) : self
     {
@@ -443,7 +441,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param bool $orFilters
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setOrFilters(bool $orFilters) : self
     {
@@ -470,7 +468,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param array $parameters
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setParameters(array $parameters): self
     {
@@ -488,7 +486,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $username
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setUsername(string $username) : self
     {
@@ -506,7 +504,7 @@ class RequestFactory implements \JsonSerializable
 
     /**
      * @param string $apiKey
-     * @return RequestFactory
+     * @return RequestDefinition
      */
     public function setApiKey(string $apiKey) : self
     {

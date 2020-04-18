@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Test\Api;
 
+use Boxalino\IntelligenceFramework\Service\Api\Request\ContextInterface;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FacetDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\FilterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\HeaderParameterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\UserParameterDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Request\ParameterFactory;
-use Boxalino\IntelligenceFramework\Service\Api\RequestFactory;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\SortingDefinition;
 use Boxalino\IntelligenceFramework\Service\Api\Util\Configuration;
 use GuzzleHttp\Client;
@@ -22,7 +22,7 @@ class RequestService
 {
 
     /**
-     * @var RequestFactory
+     * @var ContextInterface
      */
     protected $requestFactory;
 
@@ -42,7 +42,7 @@ class RequestService
     protected $parameterFactory;
 
     public function __construct(
-        RequestFactory $requestFactory,
+        ContextInterface $requestFactory,
         ParameterFactory $parameterFactory,
         Configuration $configuration,
         LoggerInterface $boxalinoLogger
@@ -55,11 +55,14 @@ class RequestService
 
     public function get() : string
     {
-        $this->requestFactory->setUsername($this->configuration->getUsername())
-            ->setApiKey($this->configuration->getApiKey())
-            ->setApiSecret($this->configuration->getApiSecret())
-            ->setDev($this->configuration->getIsDev())
-            ->setTest($this->configuration->getIsTest())
+        $channelId = "";
+        $this->configuration->setChannelId($channelId);
+        $this->requestFactory
+            ->setUsername($this->configuration->getUsername($channelId))
+            ->setApiKey($this->configuration->getApiKey($channelId))
+            ->setApiSecret($this->configuration->getApiSecret($channelId))
+            ->setDev($this->configuration->getIsDev($channelId))
+            ->setTest($this->configuration->getIsTest($channelId))
             ->setSessionId("1234567uikjhytrewsdgh5yjhgfe")
             ->setProfileId("234567iuytrewqwer")
             ->setCustomerId("2")
@@ -72,8 +75,7 @@ class RequestService
             ->addSort($this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_SORT)->add("id"))
             ->addFilters(
                 $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->add("products_visibility", [30]),
-                $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->add("category_id", ["db1ae14a599c47b89be823bff5d4d7a4"])
-                #$this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->addRange("discountedPrice", 0.80, 1500.30)
+                $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_FILTER)->add("category_id", ["2a6e2b2ebf4d402db39059e1134bad0e"])
             )
             ->setOrFilters(false)
             ->addFacets(

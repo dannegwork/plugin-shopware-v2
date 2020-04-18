@@ -7,6 +7,11 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Shopware\Core\Framework\Uuid\Uuid;
 
+/**
+ * Class Facet
+ * check src/Core/Content/Property/PropertyGroupDefinition.php for other property types and definitions
+ * @package Boxalino\IntelligenceFramework\Service\Exporter\Item
+ */
 class Facet extends ItemsAbstract
 {
     /**
@@ -66,7 +71,9 @@ class Facet extends ItemsAbstract
     public function getItemRelationQuery(int $page = 1): QueryBuilder
     {
         $query = $this->connection->createQueryBuilder();
-        $query->select(["LOWER(HEX(product_option.product_id)) AS product_id", "LOWER(HEX(product_option.property_group_option_id)) AS {$this->getPropertyIdField()}"])
+        $query->select([
+            "LOWER(HEX(product_option.product_id)) AS product_id",
+            "LOWER(HEX(product_option.property_group_option_id)) AS {$this->getPropertyIdField()}"])
             ->from("product_option")
             ->leftJoin("product_option", "property_group_option", "property_group_option",
                 "product_option.property_group_option_id = property_group_option.id")
@@ -106,8 +113,10 @@ class Facet extends ItemsAbstract
      */
     protected function getLocalizedFieldsQuery() : QueryBuilder
     {
-        return $this->getLocalizedFields('property_group_option_translation', 'property_group_option_id', 'property_group_option_id',
-            'property_group_option_id', "name", ['property_group_option_translation.property_group_option_id']
+        return $this->getLocalizedFields('property_group_option_translation',
+            'property_group_option_id', 'property_group_option_id',
+            'property_group_option_id', "name",
+            ['property_group_option_translation.property_group_option_id']
         );
     }
 
@@ -134,7 +143,9 @@ class Facet extends ItemsAbstract
      */
     public function getRequiredFields(): array
     {
-        return array_merge($this->getLanguageHeaderColumns(),["LOWER(HEX(property_group_option.id)) AS {$this->getPropertyIdField()}"]);
+        return array_merge($this->getLanguageHeaderColumns(),
+            ["LOWER(HEX(property_group_option.id)) AS {$this->getPropertyIdField()}"]
+        );
     }
 
     /**
@@ -186,7 +197,8 @@ class Facet extends ItemsAbstract
      */
     public function getPropertyNames() : array
     {
-        $query = $this->connection->createQueryBuilder()->select(["LOWER(HEX(property_group_id)) AS property_group_id", "name"])
+        $query = $this->connection->createQueryBuilder()
+            ->select(["LOWER(HEX(property_group_id)) AS property_group_id", "name"])
             ->from("property_group_translation")
             ->where("language_id = :languageId")
             ->setParameter("languageId", Uuid::fromHexToBytes($this->getChannelDefaultLanguage()), ParameterType::STRING);

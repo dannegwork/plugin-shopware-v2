@@ -3,6 +3,12 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
+    <imports>
+        <import resource="api/autocomplete.xml"/>
+        <import resource="api/search.xml"/>
+        <import resource="api/accessor.xml"/>
+    </imports>
+
     <services>
         <service id="boxalino.api.util.configurator" class="Boxalino\IntelligenceFramework\Service\Api\Util\Configuration" parent="boxalino.util.configurator" />
 
@@ -19,11 +25,29 @@
         <service id="boxalino.api.request.parameter.user" class="Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\UserParameterDefinition" parent="boxalino.api.request.parameter.definition" public="true" shared="false"/>
         <service id="boxalino.api.request.parameter.header" class="Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\HeaderParameterDefinition" parent="boxalino.api.request.parameter.definition" public="true" shared="false"/>
         <service id="boxalino.api.request.parameter.item" class="Boxalino\IntelligenceFramework\Service\Api\Request\Parameter\ItemDefinition" parent="boxalino.api.request.parameter.definition" public="true" shared="false"/>
-        <service id="boxalino.api.request.factory" class="Boxalino\IntelligenceFramework\Service\Api\RequestFactory"/>
+
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Response\ResponseDefinitionInterface" class="Boxalino\IntelligenceFramework\Service\Api\Response\ResponseDefinition">
+            <argument type="service" id="monolog.logger.boxalino"/>
+            <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface"/>
+        </service>
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Request\RequestDefinitionInterface" class="Boxalino\IntelligenceFramework\Service\Api\Request\RequestDefinition"/>
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Request\ContextInterface" class="Boxalino\IntelligenceFramework\Service\Api\Request\ContextAbstract" abstract="true">
+            <argument type="service" id="boxalino.api.request.transformer"/>
+            <argument type="service" id="boxalino.api.request.parameter.factory"/>
+        </service>
+
+        <!--<service id="Boxalino\IntelligenceFramework\Service\Api\Request\RequestDefinitionInterface" class="Boxalino\IntelligenceFramework\Service\Api\Request\RequestFactory"/>-->
+
+        <service id="boxalino.api.request.transformer" class="Boxalino\IntelligenceFramework\Service\Api\Request\RequestTransformer">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="boxalino.api.request.parameter.factory"/>
+            <argument type="service" id="boxalino.api.util.configurator"/>
+            <argument type="service" id="monolog.logger.boxalino"/>
+        </service>
 
         <!-- TEST -->
         <service id="boxalino.test.api.request" class="Boxalino\IntelligenceFramework\Service\Test\Api\RequestService">
-            <argument type="service" id="boxalino.api.request.factory"/>
+            <argument type="service" id="boxalino.api.request.context.search"/>
             <argument type="service" id="boxalino.api.request.parameter.factory"/>
             <argument type="service" id="boxalino.api.util.configurator"/>
             <argument type="service" id="monolog.logger.boxalino"/>

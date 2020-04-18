@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
 use Psr\Http\Message\RequestInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
  * Class RestService
@@ -44,9 +45,8 @@ class RestService
         $this->config = $config;
     }
 
-    public function request() : string
+    public function request()
     {
-
         $body = $this->requestService->get();
         $request = new Request(
             'POST',
@@ -56,14 +56,20 @@ class RestService
         );
         $this->logger->info("====================== body =======================");
         $this->logger->info($body);
+        try{
+            $response = $this->restClient->send($request);
+            $responseService = (new ResponseService())->set($response);
 
-        $response = $this->restClient->send($request);
+            $this->logger->info("====================== response =======================");
+            $this->logger->info(json_encode($responseService->get()));
 
-        $jsonResponse = $response->getBody()->getContents();
-        $this->logger->info("====================== response =======================");
-        $this->logger->info($jsonResponse);
+            return $responseService->getJson();
+        } catch (\Exception $exception) {
+            $this->logger->warning($exception->getMessage());
 
-        return $jsonResponse;
+            $response = $this->restClient->send($request);
+            return (new ResponseService())->set($response);
+        }
     }
 
 }

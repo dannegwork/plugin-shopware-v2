@@ -1,0 +1,10 @@
+{% block page_content_section_narrative %}
+    {% set layout = section.sizingMode ? section.sizingMode|replace({"_": "-"}) : "container" %}
+    <div class="cms-section-narrative {{ layout }}">
+        {% for block in page.blocks %}
+            {% block section_default_content_block %}
+                {% sw_include "@Storefront/storefront/section/cms-section-block-container.html.twig" %}
+            {% endblock %}
+        {% endfor %}
+    </div>
+{% endblock %}

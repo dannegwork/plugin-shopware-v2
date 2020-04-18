@@ -25,6 +25,11 @@ class Configuration
     protected $logger;
 
     /**
+     * @var array
+     */
+    protected $config = [];
+
+    /**
      * @param SystemConfigService $systemConfigService
      * @param \Psr\Log\LoggerInterface $boxalinoLogger
      */
@@ -38,8 +43,13 @@ class Configuration
 
     public function getPluginConfigByChannelId($id)
     {
-        $allConfig = $this->systemConfigService->all($id);
-        return $allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config'];
+        if(empty($this->config) || !isset($this->config[$id]))
+        {
+            $allConfig = $this->systemConfigService->all($id);
+            $this->config[$id] = $allConfig[self::BOXALINO_FRAMEWORK_CONFIG_KEY]['config'];
+        }
+
+        return $this->config[$id];
     }
 
 }

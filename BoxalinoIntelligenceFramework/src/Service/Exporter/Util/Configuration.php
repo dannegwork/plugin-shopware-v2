@@ -270,12 +270,7 @@ class Configuration extends \Boxalino\IntelligenceFramework\Service\Util\Configu
     public function getExportTransactionIncremental(string $account) : string
     {
         $config = $this->getAccountConfig($account);
-        if($config['exportTransactionMode'])
-        {
-            return true;
-        }
-
-        return false;
+        return (bool) $config['exportTransactionMode'];
     }
 
     /**
@@ -322,7 +317,7 @@ class Configuration extends \Boxalino\IntelligenceFramework\Service\Util\Configu
     public function useDevIndex(string $account) : bool
     {
         $config = $this->getAccountConfig($account);
-        return (bool) $config['index'];
+        return (bool) $config['devIndex'];
     }
 
     /**
@@ -449,7 +444,7 @@ class Configuration extends \Boxalino\IntelligenceFramework\Service\Util\Configu
      * @param string $account
      * @return int
      */
-    public function getExporterTemporaryArchivePath(string $account) : int
+    public function getExporterTemporaryArchivePath(string $account) : ?string
     {
         return null;
     }

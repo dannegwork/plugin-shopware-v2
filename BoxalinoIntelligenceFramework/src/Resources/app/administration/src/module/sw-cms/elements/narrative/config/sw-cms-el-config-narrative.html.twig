@@ -1,0 +1,56 @@
+{% block sw_cms_element_narrative_config %}
+    <div class="sw-cms-el-config-narrative">
+
+        {% block sw_cms_element_narrative_config_widget %}
+            <sw-field type="text"
+                      :label="Widget"
+                      :placeholder="Boxalino Widget">
+            </sw-field>
+        {% endblock %}
+
+        {% block sw_cms_element_narrative_config_hitCount %}
+            <sw-field  type="number"
+                      :label="Returned Matches (nr)"
+                      :placeholder="Hits Count Value">
+            </sw-field>
+        {% endblock %}
+
+        {% block sw_cms_element_narrative_config_returnFields %}
+            <sw-field type="text"
+                      :label="Returned Fields (divided by comma (,))"
+                      :placeholder="id, products_title, discountedPrice, products_image, ..">
+            </sw-field>
+        {% endblock %}
+
+        {% block sw_cms_element_narrative_config_groupBy %}
+            <sw-field type="string"
+                      :label="Group by (field name)"
+                      :placeholder="id">
+            </sw-field>
+        {% endblock %}
+
+        {% block sw_cms_element_narrative_config_filters %}
+            <sw-field type="text"
+                      :label="Filters (list, divided by comma (,)))"
+                      :placeholder="products_visibility=30">
+            </sw-field>
+        {% endblock %}
+
+        {% block sw_cms_element_narrative_config_facets %}
+            <sw-field type="text"
+                      :label="Facets (list, divided by comma (,)))"
+                      :placeholder="products_brand=Brand1&category_id=CategoryId">
+            </sw-field>
+        {% endblock %}
+
+        {% block sw_cms_element_narrative_config_context %}
+            <sw-select-field :placeholder="Element context on the page (listing, recommendation)"
+                                :label="Context">
+                <option value="listing">Listing</option>
+                <option value="recommendation">Recommendation</option>
+                <option value="none">N/A</option>
+            </sw-select-field>
+        {% endblock %}
+
+    </div>
+{% endblock %}
