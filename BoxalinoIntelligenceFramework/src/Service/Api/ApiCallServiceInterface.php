@@ -25,7 +25,7 @@ interface ApiCallServiceInterface
     /**
      * @return bool
      */
-    public function getFallback() : bool;
+    public function isFallback() : bool;
 
     /**
      * @return ResponseDefinitionInterface

@@ -29,6 +29,11 @@ class ApiResponsePage extends Page
     protected $groupBy;
 
     /**
+     * @var bool
+     */
+    protected $fallback = false;
+
+    /**
      * @return \ArrayIterator
      */
     public function getBlocks() : \ArrayIterator
@@ -79,6 +84,24 @@ class ApiResponsePage extends Page
     public function setRequestId(string $requestId) : self
     {
         $this->requestId = $requestId;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFallback(): bool
+    {
+        return $this->fallback;
+    }
+
+    /**
+     * @param bool $fallback
+     * @return ApiResponsePage
+     */
+    public function setFallback(bool $fallback): ApiResponsePage
+    {
+        $this->fallback = $fallback;
         return $this;
     }
 

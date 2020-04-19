@@ -21,7 +21,7 @@
         </input-field>
         <input-field type="text">
             <name>apiSecret</name>
-            <label>API password</label>
+            <label>API secret</label>
             <helpText>Please request your account with credentials by contacting support@boxalino.com.</helpText>
         </input-field>
         <input-field type="bool">

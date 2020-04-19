@@ -1,0 +1,7 @@
+{% block boxalino_narrative %}
+    {# loop through set blocks and render each element by including the template #}
+    {% for block in page.blocks %}
+        {% set narrativeContent = {'bxblock' : block } %}
+        {% sw_include block.template with narrativeContent %}
+    {% endfor %}
+{% endblock %}

@@ -61,19 +61,12 @@ class ApiPageLoader
         $page = $this->genericLoader->load($request, $salesChannelContext);
         $page = ApiResponsePage::createFrom($page);
 
-        /**
-         * @TODO implement request validators!? ex: search param must exist for search, etc
-         */
-        if (!$request->query->has('search')) {
-            throw new MissingRequestParameterException('search');
-        }
-
         $this->apiCallService->call(
             $this->apiContextInterface->get($request, $salesChannelContext),
             $this->configuration->getRestApiEndpoint($salesChannelContext->getSalesChannel()->getId())
         );
 
-        if($this->apiCallService->getFallback())
+        if($this->apiCallService->isFallback())
         {
             /**
              * @TODO implement fallback scenario (possible parrent call)

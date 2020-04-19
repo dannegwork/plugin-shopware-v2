@@ -47,15 +47,7 @@ class Accessor implements AccessorInterface
         $key = strtolower(substr($methodName, 3));
         if($methodPrefix == 'get')
         {
-            if($this->accessors->offsetExists($key))
-            {
-                return $this->accessors->offsetGet($key);
-            }
-
-            if($this->accessorFields->offsetExists($key))
-            {
-                return $this->accessorFields->offsetGet($key);
-            }
+            return $this->$key;
         }
 
         throw new \BadMethodCallException(
@@ -72,13 +64,7 @@ class Accessor implements AccessorInterface
      */
     public function set(string $propertyName, $content)
     {
-        if($content instanceof AccessorInterface)
-        {
-            $this->accessors->offsetSet($propertyName, $content);
-        } else {
-            $this->accessorFields->offsetSet($propertyName, $content);
-        }
-
+        $this->$propertyName = $content;
         return $this;
     }
 

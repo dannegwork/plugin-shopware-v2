@@ -56,7 +56,7 @@ interface BlockInterface extends AccessorInterface
      * @param array|null $accessor
      * @return $this
      */
-    public function setAccessor(?array $accessor);
+    public function setAccessor($accessor);
 
     /**
      * @param null | array $blocks

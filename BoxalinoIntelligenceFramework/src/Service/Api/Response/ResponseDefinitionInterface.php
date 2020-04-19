@@ -73,5 +73,4 @@ interface ResponseDefinitionInterface
      */
     public function toObject(\StdClass $data, AccessorInterface $model);
 
-
 }

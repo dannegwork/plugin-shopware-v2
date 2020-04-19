@@ -148,19 +148,14 @@ class ResponseDefinition implements ResponseDefinitionInterface
     public function getBlocks() : \ArrayIterator
     {
         $blocks = $this->get()->blocks;
-        #return $blocks;
-
         $content = new \ArrayIterator();
-        $index = 0;
         foreach($blocks as $block)
         {
             $content->append($this->getBlockObject($block));
         }
 
-        $this->logger->info(serialize($content));
+        #$this->logger->info(var_dump($content));
         return $content;
-
-        #return new BlocksDataProvider($blocks);
     }
 
     /**

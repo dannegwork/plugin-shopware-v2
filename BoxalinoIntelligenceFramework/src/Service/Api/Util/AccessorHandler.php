@@ -79,7 +79,7 @@ class AccessorHandler implements AccessorHandlerInterface
     {
         if($this->accessorSetter->offsetExists($type))
         {
-            return $this->accessorSetter->offsetExists($type);
+            return $this->accessorSetter->offsetGet($type);
         }
 
         throw new \BadMethodCallException(

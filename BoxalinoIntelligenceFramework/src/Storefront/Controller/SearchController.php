@@ -95,10 +95,10 @@ class SearchController extends ShopwareSearchController
     public function suggest(SalesChannelContext $context, Request $request): Response
     {
         #$page = $this->searchPageLoader->load($request, $context);
-
         $page = $this->apiPageLoader->load($request, $context);
 
-        return $this->renderStorefront('@Storefront/storefront/layout/header/search-suggest.html.twig', ['page' => $page]);
+        #return $this->renderStorefront('@Storefront/storefront/layout/header/search-suggest.html.twig', ['page' => $page]);
+        return $this->renderStorefront('@BoxalinoIntelligenceFramework/storefront/layout/narrative/main.html.twig', ['page' => $page]);
     }
 
     /**

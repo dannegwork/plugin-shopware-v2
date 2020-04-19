@@ -63,15 +63,16 @@ class ApiCallService implements ApiCallServiceInterface
             $this->setFallback(false);
             $request = new Request(
                 'POST',
-                stripslashes(substr($restApiEndpoint, 1, -1)),
+                stripslashes($restApiEndpoint),
                 ['Content-Type' => 'application/json'],
                 $apiRequest->jsonSerialize()
             );
-            $response = $this->restClient->send($request);
-            $this->setApiResponse($this->responseDefinition->setResponse($response));
 
             $this->logger->info("============= AUTOCOMPLETE REQUEST ================");
             $this->logger->info($apiRequest->jsonSerialize());
+
+            $response = $this->restClient->send($request);
+            $this->setApiResponse($this->responseDefinition->setResponse($response));
 
             $this->logger->info("============= AUTOCOMPLETE RESPONSE JSON ================");
             $this->logger->info($this->getApiResponse()->getJson());
@@ -81,7 +82,6 @@ class ApiCallService implements ApiCallServiceInterface
         {
             $this->setFallback(true);
             $this->logger->error("BoxalinoAPIError: " . $exception->getMessage() . " at " . __CLASS__);
-            $this->logger->error($exception->getTraceAsString());
         }
 
         return null;
@@ -90,7 +90,7 @@ class ApiCallService implements ApiCallServiceInterface
     /**
      * @return bool
      */
-    public function getFallback() : bool
+    public function isFallback() : bool
     {
         return $this->fallback;
     }

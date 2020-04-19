@@ -1,0 +1,15 @@
+{% block layout_search_suggest %}
+    <div class="search-suggest js-search-result">
+        <ul class="search-suggest-container">
+            {% for block in bxblock.blocks %}
+                {% if block.hit %}
+                    {% block layout_search_suggest_result_product %}
+                        {% set narrativeContent = {'bxblock' : block } %}
+                        {% sw_include block.template with narrativeContent %}
+                    {% endblock %}
+                {% endif %}
+
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

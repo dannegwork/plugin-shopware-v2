@@ -62,9 +62,12 @@ class Block extends Accessor
         return $this->accessor;
     }
 
+    /**
+     * @return \ArrayIterator
+     */
     public function getBlocks() : \ArrayIterator
     {
-
+        return $this->blocks;
     }
 
     /**
@@ -74,7 +77,6 @@ class Block extends Accessor
     {
         return $this->index;
     }
-
 
     /**
      * @param null | array $model
@@ -103,9 +105,14 @@ class Block extends Accessor
      * @param array|null $accessor
      * @return $this
      */
-    public function setAccessor(?array $accessor)
+    public function setAccessor($accessor)
     {
-        $this->accessor = $accessor[0] ?? null;
+        $this->accessor = $accessor;
+        if(is_array($accessor))
+        {
+            $this->accessor = $accessor[0];
+        }
+
         return $this;
     }
 
@@ -115,10 +122,10 @@ class Block extends Accessor
      */
     public function setBlocks(?array $blocks)
     {
-        $this->blocks =[];
+        $this->blocks = new \ArrayIterator();
         foreach($blocks as $block)
         {
-            $this->blocks[] = $this->toObject($block, $this->getAccessorHandler()->getAccessor("blocks"));
+            $this->blocks->append($this->toObject($block, $this->getAccessorHandler()->getAccessor("blocks")));
         }
 
         return $this;
