@@ -20,4 +20,10 @@ interface AccessorInterface
      */
     public function set(string $parameterName, $content);
 
+    /**
+     * @param string $parameterName
+     * @return mixed
+     */
+    public function get(string $parameterName);
+
 }

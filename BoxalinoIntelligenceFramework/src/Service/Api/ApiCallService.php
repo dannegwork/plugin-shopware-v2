@@ -7,6 +7,7 @@ use Boxalino\IntelligenceFramework\Service\Api\Response\ResponseDefinitionInterf
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\Cookie;
 
 /**
  * Class ApiCallService
@@ -63,18 +64,20 @@ class ApiCallService implements ApiCallServiceInterface
             $this->setFallback(false);
             $request = new Request(
                 'POST',
-                stripslashes($restApiEndpoint),
-                ['Content-Type' => 'application/json'],
+                $this->getApiEndpoint($restApiEndpoint, $apiRequest->getProfileId()),
+                [
+                    'Content-Type' => 'application/json'
+                ],
                 $apiRequest->jsonSerialize()
             );
 
-            $this->logger->info("============= AUTOCOMPLETE REQUEST ================");
+            $this->logger->info("=============  REQUEST ================");
             $this->logger->info($apiRequest->jsonSerialize());
 
             $response = $this->restClient->send($request);
             $this->setApiResponse($this->responseDefinition->setResponse($response));
 
-            $this->logger->info("============= AUTOCOMPLETE RESPONSE JSON ================");
+            $this->logger->info("=============  RESPONSE JSON ================");
             $this->logger->info($this->getApiResponse()->getJson());
 
             return $this->getApiResponse();
@@ -85,6 +88,16 @@ class ApiCallService implements ApiCallServiceInterface
         }
 
         return null;
+    }
+
+    /**
+     * @param string $restApiEndpoint
+     * @param string $profileId
+     * @return string
+     */
+    public function getApiEndpoint(string $restApiEndpoint, string $profileId)
+    {
+        return stripslashes($restApiEndpoint) . "?profileId=$profileId";
     }
 
     /**

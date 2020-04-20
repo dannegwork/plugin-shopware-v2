@@ -20,7 +20,7 @@ class HeaderParameterDefinition extends ParameterDefinition
      * @param string $value
      * @return $this
      */
-    public function add(string $property, string $value)
+    public function add(string $property, ?string $value)
     {
         $this->{$property} = $value;
         return $this;

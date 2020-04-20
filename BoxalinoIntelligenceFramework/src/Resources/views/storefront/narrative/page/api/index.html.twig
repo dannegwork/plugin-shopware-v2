@@ -1,0 +1,7 @@
+{# Narrative template untached from base (ex: sample for autocomplete content rendering) #}
+{% block boxalino_narrative %}
+    {% for bxblock in page.blocks %}
+        {% set narrativeContent = {'block' : bxblock } %}
+        {% sw_include bxblock.template with narrativeContent %}
+    {% endfor %}
+{% endblock %}

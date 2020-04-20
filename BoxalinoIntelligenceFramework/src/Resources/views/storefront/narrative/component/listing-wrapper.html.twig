@@ -1,0 +1,32 @@
+{#
+@BoxalinoIntelligenceIntegration/storefront/narrative/component/listing-wrapper.html.twig
+
+the wrapper is used as is designed in the default Shopware6 theme twig template file
+(@Storefront/storefront/component/product/listing.html.twig)
+
+to be configured and adapted per client design
+uses a loop through Boxalino response blocks (block.blocks) to render the other elements in the layout
+(ex: toolbar, product list or other scenarios -- no products, subphrases, mix of content, etc)
+#}
+<div class="cms-element-product-listing-wrapper"
+     data-listing-pagination="true"
+     data-listing="true"
+     data-listing-options='{
+                 "sidebar": "{{ sidebar }}",
+                 "params": {{ params|json_encode }},
+                 "dataUrl": "{{ dataUrl }}",
+                 "filterUrl": "{{ filterUrl }}",
+                 "snippets": {
+                    "resetAllButtonText": "{{ 'listing.filterPanelResetAll'|trans|sw_sanitize }}"
+                 }
+             }'>
+
+    {% block element_product_listing_wrapper_content %}
+        <div class="cms-element-product-listing">
+            {% for bxblock in block.blocks %}
+                {% set narrativeContent = {'block' : bxblock } %}
+                {% sw_include bxblock.template with narrativeContent %}
+            {% endfor %}
+        </div>
+    {% endblock %}
+</div>

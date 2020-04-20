@@ -1,15 +1,13 @@
 <?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Api\Response;
 
-use Boxalino\IntelligenceFramework\Service\Api\Content\BlocksDataProvider;
 use Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface;
+use Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface;
 use GuzzleHttp\Psr7\Response;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\ErrorHandler\Error\UndefinedMethodError;
 
 interface ResponseDefinitionInterface
 {
-
 
     /**
      * @return int
@@ -26,6 +24,9 @@ interface ResponseDefinitionInterface
      */
     public function getCorrectedSearchQuery() : ?string;
 
+    /**
+     * @return string|null
+     */
     public function getRequestId() : ?string;
 
     /**
@@ -72,5 +73,10 @@ interface ResponseDefinitionInterface
      * @return mixed
      */
     public function toObject(\StdClass $data, AccessorInterface $model);
+
+    /**
+     * @return AccessorHandlerInterface
+     */
+    public function getAccessorHandler(): AccessorHandlerInterface;
 
 }

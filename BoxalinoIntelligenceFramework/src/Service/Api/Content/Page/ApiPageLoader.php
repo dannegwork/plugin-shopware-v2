@@ -46,14 +46,12 @@ class ApiPageLoader
 
     public function __construct(
         GenericPageLoader $genericLoader,
-        ContextInterface $apiContextInterface,
         ApiCallServiceInterface $apiCallService,
         Configuration $configuration
     ) {
         $this->configuration = $configuration;
         $this->apiCallService = $apiCallService;
         $this->genericLoader = $genericLoader;
-        $this->apiContextInterface = $apiContextInterface;
     }
 
     public function load(Request $request, SalesChannelContext $salesChannelContext): ApiResponsePage
@@ -73,6 +71,8 @@ class ApiPageLoader
              */
         }
 
+        $this->apiCallService->getApiResponse()->getAccessorHandler()->setSalesChannelContext($salesChannelContext);
+
         $page->setBlocks($this->apiCallService->getApiResponse()->getBlocks());
         $page->setRequestId("this->apiCallService->getApiResponse()->getRequestId()");
         $page->setGroupBy("this->apiCallService->getApiResponse()->getGroupBy()");
@@ -82,6 +82,16 @@ class ApiPageLoader
          */
 
         return $page;
+    }
+
+    /**
+     * @param ContextInterface $apiContextInterface
+     * @return $this
+     */
+    public function setApiContextInterface(ContextInterface $apiContextInterface)
+    {
+        $this->apiContextInterface = $apiContextInterface;
+        return $this;
     }
 
 }

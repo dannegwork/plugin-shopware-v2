@@ -7,6 +7,7 @@
         <import resource="api/autocomplete.xml"/>
         <import resource="api/search.xml"/>
         <import resource="api/accessor.xml"/>
+        <import resource="api/integration.xml"/>
     </imports>
 
     <services>
@@ -45,24 +46,6 @@
             <argument type="service" id="monolog.logger.boxalino"/>
         </service>
 
-        <!-- TEST -->
-        <service id="boxalino.test.api.request" class="Boxalino\IntelligenceFramework\Service\Test\Api\RequestService">
-            <argument type="service" id="boxalino.api.request.context.search"/>
-            <argument type="service" id="boxalino.api.request.parameter.factory"/>
-            <argument type="service" id="boxalino.api.util.configurator"/>
-            <argument type="service" id="monolog.logger.boxalino"/>
-        </service>
-
-        <service id="boxalino.test.api.rest" class="Boxalino\IntelligenceFramework\Service\Test\Api\RestService" >
-            <argument type="service" id="boxalino.api.util.configurator"/>
-            <argument type="service" id="boxalino.test.api.request"/>
-            <argument type="service" id="monolog.logger.boxalino"/>
-        </service>
-
-        <service id="Boxalino\IntelligenceFramework\Service\Test\ApiCommand">
-            <argument type="service" id="boxalino.test.api.rest"/>
-            <tag name="console.command"/>
-        </service>
     </services>
 
 </container>

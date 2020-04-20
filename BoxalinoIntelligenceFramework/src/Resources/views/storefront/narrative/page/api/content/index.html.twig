@@ -1,0 +1,5 @@
+{# loop through set blocks and render each element by including the template #}
+{% for bxblock in page.blocks %}
+    {% set narrativeContent = {'block' : bxblock } %}
+    {% sw_include bxblock.template with narrativeContent %}
+{% endfor %}

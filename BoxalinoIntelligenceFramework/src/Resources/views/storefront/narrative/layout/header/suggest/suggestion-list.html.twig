@@ -2,11 +2,11 @@
     <div class="search-suggest js-search-result">
         {% block layout_search_suggest_container %}
             <ul class="search-suggest-container">
-                {% for block in bxblock.blocks %}
-                    {% if block.suggestion %}
+                {% for bxblock in block.blocks %}
+                    {% if bxblock.suggestion %}
                         {% block layout_search_suggest_result_suggestion %}
-                            {% set narrativeContent = {'bxblock' : block } %}
-                            {% sw_include block.template with narrativeContent %}
+                            {% set narrativeContent = {'block' : bxblock } %}
+                            {% sw_include bxblock.template with narrativeContent %}
                         {% endblock %}
                     {% endif %}
                 {% endfor %}

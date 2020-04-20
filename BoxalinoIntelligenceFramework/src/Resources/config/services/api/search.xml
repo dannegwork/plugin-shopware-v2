@@ -15,6 +15,7 @@
             </call>
             <call method="setWidget"><argument>search</argument></call>
         </service>
+
     </services>
 
 </container>

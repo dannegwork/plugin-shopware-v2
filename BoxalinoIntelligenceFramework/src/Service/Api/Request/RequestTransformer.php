@@ -6,15 +6,14 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\Statement;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
-use Shopware\Core\Defaults;
-use Shopware\Core\Framework\DataAbstractionLayer\Cache\EntityCacheKeyGenerator;
-use Shopware\Core\Framework\DataAbstractionLayer\Doctrine\FetchModeHelper;
+use Ramsey\Uuid\Uuid;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Shopware\Core\PlatformRequest;
 use Shopware\Core\SalesChannelRequest;
 use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Symfony\Component\HttpFoundation\Cookie;
 
 /**
  * Class RequestTransformer
@@ -100,8 +99,9 @@ class RequestTransformer
         }
 
         $salesChannelId = $context->getSalesChannel()->getId();
-        $sessionId = $request->getSession()->getId();
-        $customerId = is_null($context->getCustomer()) ? $sessionId : $context->getCustomer()->getId();
+        $sessionId = $this->getSessionId($request);
+        $profileId = $this->getProfileId($request);
+        $customerId = is_null($context->getCustomer()) ? $profileId : $context->getCustomer()->getId();
 
         $this->configuration->setChannelId($salesChannelId);
         $this->requestDefinition
@@ -111,7 +111,7 @@ class RequestTransformer
             ->setDev($this->configuration->getIsDev($salesChannelId))
             ->setTest($this->configuration->getIsTest($salesChannelId))
             ->setSessionId($sessionId)
-            ->setProfileId($customerId)
+            ->setProfileId($profileId)
             ->setCustomerId($customerId)
             ->setLanguage(substr($request->getLocale(), 0, 2));
 
@@ -120,6 +120,38 @@ class RequestTransformer
         $this->addParameters($request);
 
         return $this->requestDefinition;
+    }
+
+    /**
+     * The value stored in the CEMS cookie
+     */
+    public function getSessionId(Request $request)
+    {
+        if($request->cookies->has("cems"))
+        {
+            return $request->cookies->get("cems");
+        }
+
+        $cookieValue = Uuid::uuid4()->toString();
+        $request->cookies->set("cems", $cookieValue);
+
+        return $cookieValue;
+    }
+
+    /**
+     * The value stored in the CEMV cookie
+     */
+    public function getProfileId(Request $request)
+    {
+        if($request->cookies->has("cemv"))
+        {
+            return $request->cookies->get("cemv");
+        }
+
+        $cookieValue = Uuid::uuid4()->toString();
+        $request->cookies->set("cemv", $cookieValue);
+
+        return $cookieValue;
     }
 
     /**
@@ -193,7 +225,10 @@ class RequestTransformer
         }
         $reverse = $direction === FieldSorting::DESCENDING ?? false;
 
-        $this->requestDefinition->addSort($this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_SORT)->add($this->getFieldName($field), $reverse));
+        $this->requestDefinition->addSort(
+            $this->parameterFactory->get(ParameterFactory::BOXALINO_API_REQUEST_PARAMETER_TYPE_SORT)
+            ->add($this->getFieldName($field), $reverse)
+        );
     }
 
     /**
@@ -271,43 +306,6 @@ class RequestTransformer
             'price'     => 'products_bx_grouped_price',
             'id       ' => 'products_group_id'
         ];
-    }
-
-    private function fetchConfig(): array
-    {
-        $item = $this->cache->getItem(self::BOXALINO_REQUEST_BUILDER_CACHE_KEY_CONFIG);
-
-        if ($item->isHit() && $item->get()) {
-            return $item->get();
-        }
-
-        /** @var Statement $statement */
-        $statement = $this->connection->createQueryBuilder()
-            ->select(
-                [
-                    'CONCAT(TRIM(TRAILING "/" FROM domain.url), "/") `key`',
-                    'CONCAT(TRIM(TRAILING "/" FROM domain.url), "/") url',
-                    'LOWER(HEX(domain.id)) id',
-                    'LOWER(HEX(sales_channel.id)) salesChannelId',
-                    'LOWER(HEX(theme.id)) themeId',
-                    'snippet_set.iso as locale'
-                ]
-            )->from('system_config')
-            ->innerJoin('sales_channel', 'sales_channel_domain', 'domain', 'domain.sales_channel_id = sales_channel.id')
-            ->innerJoin('domain', 'snippet_set', 'snippet_set', 'snippet_set.id = domain.snippet_set_id')
-            ->leftJoin('sales_channel', 'theme_sales_channel', 'theme_sales_channel', 'sales_channel.id = theme_sales_channel.sales_channel_id')
-            ->leftJoin('theme_sales_channel', 'theme', 'theme', 'theme_sales_channel.theme_id = theme.id')
-            ->where('sales_channel.type_id = UNHEX(:typeId)')
-            ->andWhere('sales_channel.active')
-            ->setParameter('typeId', Defaults::SALES_CHANNEL_TYPE_STOREFRONT)
-            ->execute();
-
-        $config = FetchModeHelper::groupUnique($statement->fetchAll());
-
-        $item->set($config);
-        $this->cache->save($item);
-
-        return $config;
     }
 
 }

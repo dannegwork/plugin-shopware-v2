@@ -1,15 +1,13 @@
 <?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Api\Response;
 
-use Boxalino\IntelligenceFramework\Service\Api\Content\BlocksDataProvider;
 use Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface;
 use Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Block;
 use Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandler;
 use Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface;
 use GuzzleHttp\Psr7\Response;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\ErrorHandler\Error\UndefinedFunctionError;
-use Symfony\Component\ErrorHandler\Error\UndefinedMethodError;
+use Boxalino\IntelligenceFramework\Service\ErrorHandler\UndefinedMethodError;
 
 /**
  * Class ResponseDefinition
@@ -51,7 +49,6 @@ class ResponseDefinition implements ResponseDefinitionInterface
      * @var AccessorHandlerInterface
      */
     protected $accessorHandler = null;
-
 
     public function __construct(LoggerInterface $logger, AccessorHandlerInterface $accessorHandler)
     {
@@ -154,7 +151,6 @@ class ResponseDefinition implements ResponseDefinitionInterface
             $content->append($this->getBlockObject($block));
         }
 
-        #$this->logger->info(var_dump($content));
         return $content;
     }
 
@@ -229,6 +225,9 @@ class ResponseDefinition implements ResponseDefinitionInterface
         return $this->json;
     }
 
+    /**
+     * @return AccessorHandlerInterface
+     */
     public function getAccessorHandler(): AccessorHandlerInterface
     {
         return $this->accessorHandler;

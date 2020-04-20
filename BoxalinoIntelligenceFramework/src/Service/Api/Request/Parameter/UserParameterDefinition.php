@@ -20,7 +20,7 @@ class UserParameterDefinition extends ParameterDefinition
      * @param array $values
      * @return $this
      */
-    public function add(string $property, array $values)
+    public function add(string $property, ?array $values)
     {
         $this->{$property} = $values;
         return $this;

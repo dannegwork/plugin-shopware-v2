@@ -1,7 +1,6 @@
 <?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Api\Response\Accessor;
 
-use Boxalino\IntelligenceFramework\Service\Api\Content\BlocksDataProvider;
 use Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface;
 
 /**
@@ -13,9 +12,9 @@ interface BlockInterface extends AccessorInterface
 {
 
     /**
-     * @return string
+     * @return AccessorModelInterface|null
      */
-    public function getModel() : string;
+    public function getModel() : ?AccessorModelInterface;
 
     /**
      * @return string

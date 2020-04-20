@@ -1,7 +1,6 @@
 <?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Api\Content\Page;
 
-use Boxalino\IntelligenceFramework\Service\Api\Content\BlocksDataProvider;
 use Shopware\Core\Content\Product\SalesChannel\Listing\ProductListingResult;
 use Shopware\Storefront\Framework\Page\StorefrontSearchResult;
 use Shopware\Storefront\Page\Page;
@@ -32,6 +31,27 @@ class ApiResponsePage extends Page
      * @var bool
      */
     protected $fallback = false;
+
+    /**
+     * @var string|null
+     */
+    protected $sorting;
+
+    /**
+     * @return array
+     */
+    public function getSortings(): array
+    {
+        return $this->sortings;
+    }
+
+    /**
+     * @param array $sortings
+     */
+    public function setSortings(array $sortings): void
+    {
+        $this->sortings = $sortings;
+    }
 
     /**
      * @return \ArrayIterator

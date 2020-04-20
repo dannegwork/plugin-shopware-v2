@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 namespace Boxalino\IntelligenceFramework\Service\Api\Response\Accessor;
 
-use Boxalino\IntelligenceFramework\Service\Api\Content\BlocksDataProvider;
+use Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface;
 use Monolog\Logger;
 
 /**
@@ -39,10 +39,18 @@ class Block extends Accessor
     protected $index = 0;
 
     /**
-     * @return string
+     * The load of the model is done on model request to ensure all other properties
+     * (blocks, etc) have been set on the context which is passed via "$this"
+     *
+     * @return string|null
      */
-    public function getModel() : string
+    public function getModel() :?AccessorModelInterface
     {
+        if(is_string($this->model))
+        {
+            $this->model = $this->getAccessorHandler()->getModel($this->model, $this);
+        }
+
         return $this->model;
     }
 

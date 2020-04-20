@@ -7,7 +7,7 @@
         <service id="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface" class="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandler">
             <call method="addAccessor">
                 <argument>bx-sort</argument>
-                <argument>sort</argument>
+                <argument>sorting</argument>
                 <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Sort</argument>
             </call>
             <call method="addAccessor">
@@ -35,9 +35,20 @@
                 <argument>blocks</argument>
                 <argument>Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Block</argument>
             </call>
+            <call method="addHitIdFieldName">
+                <argument>bx-hit</argument>
+                <argument>id</argument>
+            </call>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+            <call method="setLogger">
+                <argument type="service" id="monolog.logger.boxalino"/>
+            </call>
         </service>
 
-        <service id="Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface" class="Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Accessor">
+        <service id="Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface"
+                 class="Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\Accessor">
             <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface"/>
         </service>
     </services>

@@ -1,0 +1,27 @@
+{#
+@BoxalinoIntelligenceIntegration/storefront/narrative/component/product/listing-collection.html.twig
+
+the product-listing-row segment of the original Shopware6 theme file
+(@Storefront/storefront/component/product/listing.html.twig)
+
+uses the block model (ex: Boxalino\IntelligenceFramework\Service\Api\Content\CollectionDataProvider)
+to access the collection of products (as returned by the Boxalino response) (block.model.collection)
+renders the product by ignoring other parameter data sent by Boxalino, close to original template
+#}
+{% block element_product_listing_row %}
+    <div class="row cms-listing-row js-listing-wrapper">
+        {% block element_product_listing_col %}
+            {% for product in block.model.collection %}
+                <div class="cms-listing-col {{ listingColumns }}">
+                    {% block element_product_listing_box %}
+                        {% sw_include '@BoxalinoIntelligenceFramework/storefront/narrative/component/product/card/box.html.twig' with {
+                            'layout': "minimal",
+                            'displayMode': ""
+                        } %}
+                    {% endblock %}
+                </div>
+            {% endfor %}
+        {% endblock %}
+    </div>
+{% endblock %}
+

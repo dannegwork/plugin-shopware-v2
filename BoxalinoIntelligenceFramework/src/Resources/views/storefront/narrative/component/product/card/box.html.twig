@@ -1,0 +1,22 @@
+{#
+@BoxalinoIntelligenceIntegration/storefront/narrative/component/product/card/box.html.twig
+
+original Shopware6 theme file
+(@Storefront/storefront/component/product/card/box.html.twig)
+
+minimum change (the <div>) due to the division of the original listing twig template into smaller blocks
+
+optional: use the loop through block.blocks to render other children elements set on the product layout block
+#}
+<div class="cms-listing-col {{ listingColumns }}">
+    {% block component_product_box_include %}
+        {# Includes a custom product-box template defined by the layout variable.
+           The standard template is used if no custom layout is set. #}
+
+        {% if layout is empty %}
+            {% set layout = 'standard' %}
+        {% endif %}
+
+        {% sw_include "@Storefront/storefront/component/product/card/box-" ~ layout ~ ".html.twig" ignore missing %}
+    {% endblock %}
+</div>

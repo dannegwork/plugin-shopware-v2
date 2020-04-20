@@ -462,6 +462,12 @@ class Facet extends Accessor
     public function isSelected() : bool
     {
         //check if there are selected values
+        array_filter($this->values,
+            function (FacetValue $facetValue) {
+                return $facetValue->isSelected() === true;
+            }
+        );
+
         return false;
     }
 

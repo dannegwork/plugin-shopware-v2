@@ -83,6 +83,11 @@ interface RequestDefinitionInterface extends \JsonSerializable
     public function setProfileId(string $profileId) : RequestDefinition;
 
     /**
+     * @return string
+     */
+    public function getProfileId() : string;
+
+    /**
      * @param string $customerId
      * @return RequestDefinition
      */

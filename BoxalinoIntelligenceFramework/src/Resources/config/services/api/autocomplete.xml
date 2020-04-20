@@ -23,27 +23,6 @@
             <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\Response\ResponseDefinitionInterface" />
         </service>
 
-        <service id="boxalino.api.content.page.response" class="Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiResponsePage"/>
-        <service id="boxalino.api.content.page.loader.autocomplete" class="Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiPageLoader">
-            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
-            <argument type="service" id="boxalino.api.request.context.autocomplete"/>
-            <argument type="service" id="Boxalino\IntelligenceFramework\Service\Api\ApiCallServiceInterface"/>
-            <argument type="service" id="boxalino.api.util.configurator"/>
-        </service>
-
-        <!-- frontend.search.suggest decorator INTEGRATION -->
-        <service id="Boxalino\IntelligenceFramework\Storefront\Controller\SearchController"
-                 decorates="Shopware\Storefront\Controller\SearchController">
-            <!--<argument type="service" id="Shopware\Storefront\Controller\SearchController.inner"/>-->
-            <argument type="service" id="Shopware\Storefront\Page\Search\SearchPageLoader"/>
-            <argument type="service" id="boxalino.api.content.page.loader.autocomplete"/>
-            <argument type="service" id="boxalino.api.request.context.search"/>
-            <argument type="service" id="monolog.logger.boxalino"/>
-            <call method="setContainer">
-                <argument type="service" id="service_container"/>
-            </call>
-        </service>
-
     </services>
 
 </container>

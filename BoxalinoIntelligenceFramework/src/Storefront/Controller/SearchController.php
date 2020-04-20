@@ -2,7 +2,8 @@
 
 namespace Boxalino\IntelligenceFramework\Storefront\Controller;
 
-use Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiPageLoader;
+use Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiPageLoader as AutocompletePageLoader;
+use Boxalino\IntelligenceFramework\Service\Api\Content\Page\ApiPageLoader as SearchPageLoader;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Context\Autocomplete;
 use Boxalino\IntelligenceFramework\Service\Api\Request\Context\Listing;
 use Psr\Log\LoggerInterface;
@@ -11,7 +12,7 @@ use Shopware\Core\Framework\Routing\Exception\MissingRequestParameterException;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Storefront\Framework\Cache\Annotation\HttpCache;
 use Shopware\Storefront\Page\GenericPageLoader;
-use Shopware\Storefront\Page\Search\SearchPageLoader;
+#use Shopware\Storefront\Page\Search\SearchPageLoader;
 use Shopware\Storefront\Page\Suggest\SuggestPageLoader;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,7 +45,7 @@ class SearchController extends ShopwareSearchController
     private $decorated;
 
     /**
-     * @var ApiPageLoader
+     * @var AutocompletePageLoader
      */
     private $apiPageLoader;
 
@@ -56,7 +57,7 @@ class SearchController extends ShopwareSearchController
     public function __construct(
         //ShopwareSearchController $decorated,
         SearchPageLoader $searchPageLoader,
-        ApiPageLoader $apiPageLoader,
+        AutocompletePageLoader $apiPageLoader,
         Listing $search,
         LoggerInterface $logger
     ){
@@ -75,30 +76,24 @@ class SearchController extends ShopwareSearchController
     {
         try {
             $page = $this->searchPageLoader->load($request, $context);
-
-            $searchResult = $this->search->get($request, $context);
-            $this->logger->info("============= SEARCH REQUEST ================");
-            $this->logger->info($searchResult->jsonSerialize());
-
+            #$page = $this->searchPageLoader->load($request, $context);
         } catch (MissingRequestParameterException $missingRequestParameterException) {
             return $this->forwardToRoute('frontend.home.page');
         }
 
-        return $this->renderStorefront('@Storefront/storefront/page/search/index.html.twig', ['page' => $page]);
+        #return $this->renderStorefront('@Storefront/storefront/page/search/index.html.twig', ['page' => $page]);
+        return $this->renderStorefront('@BoxalinoIntelligenceFramework/storefront/narrative/page/search/index.html.twig', ['page' => $page]);
+
     }
 
     /**
-     *
      * @HttpCache()
      * @Route("/suggest", name="frontend.search.suggest", methods={"GET"}, defaults={"XmlHttpRequest"=true})
      */
     public function suggest(SalesChannelContext $context, Request $request): Response
     {
-        #$page = $this->searchPageLoader->load($request, $context);
         $page = $this->apiPageLoader->load($request, $context);
-
-        #return $this->renderStorefront('@Storefront/storefront/layout/header/search-suggest.html.twig', ['page' => $page]);
-        return $this->renderStorefront('@BoxalinoIntelligenceFramework/storefront/layout/narrative/main.html.twig', ['page' => $page]);
+        return $this->renderStorefront('@BoxalinoIntelligenceFramework/storefront/narrative/page/api/index.html.twig', ['page' => $page]);
     }
 
     /**

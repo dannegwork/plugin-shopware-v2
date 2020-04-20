@@ -1,0 +1,17 @@
+{#
+@BoxalinoIntelligenceIntegration/storefront/narrative/component/toolbar.html.twig
+
+can contain pagination and sorting for the top navigation actions on a product listing context
+uses a loop through Boxalino response blocks (block.blocks) to render the other elements in the layout
+(ex: pagination, sorting)
+#}
+{% block element_product_listing_pagination_nav_actions %}
+    <div class="cms-element-product-listing-actions row justify-content-between">
+        {% for bxblock in block.blocks %}
+            <div class="col-md-auto">
+                {% set narrativeContent = {'block' : bxblock } %}
+                {% sw_include bxblock.template with narrativeContent %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

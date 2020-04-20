@@ -3,7 +3,6 @@ namespace Boxalino\IntelligenceFramework\Service\Api\Request;
 
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
  * Class ParameterFactory

@@ -2,7 +2,6 @@
 namespace Boxalino\IntelligenceFramework\Service\Api\Response;
 
 use Boxalino\IntelligenceFramework\Service\Api\Response\Accessor\AccessorInterface;
-use Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandler;
 use Boxalino\IntelligenceFramework\Service\Api\Util\AccessorHandlerInterface;
 
 /**
@@ -49,10 +48,15 @@ trait ResponseHydratorTrait
             if($this->getAccessorHandler()->hasAccessor($propertyName))
             {
                 $handler = $this->getAccessorHandler()->getAccessor($propertyName);
-                $valueObject = $this->toObject($value, $handler);
                 $objectProperty = $this->getAccessorHandler()->getAccessorSetter($propertyName);
-
+                if(empty($value))
+                {
+                    $object->set($objectProperty, $handler);
+                    continue;
+                }
+                $valueObject = $this->toObject($value, $handler);
                 $object->set($objectProperty, $valueObject);
+
                 continue;
             }
 
@@ -67,11 +71,20 @@ trait ResponseHydratorTrait
      */
     abstract function getAccessorHandler() : AccessorHandlerInterface;
 
+    /**
+     * @param $content
+     */
     public function log($content)
     {
         if(property_exists($this, "logger"))
         {
             $this->logger->info($content);
+            return;
+        }
+
+        if(property_exists($this->getAccessorHandler(), "logger"))
+        {
+            $this->getAccessorHandler()->getLogger()->info($content);
         }
     }
 
